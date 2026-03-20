@@ -56,7 +56,7 @@ flask db upgrade
 ```bash
 python run.py
 ```
-접속 주소: `http://127.0.0.1:5000`
+접속 주소: `http://127.0.0.1:5001`
 
 ---
 
