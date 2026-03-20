@@ -1,5 +1,4 @@
 import os
-import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,7 +9,7 @@ class KisApi:
     def __init__(self):
         self.app_key = os.getenv('KIS_APP_KEY')
         self.app_secret = os.getenv('KIS_APP_SECRET')
-        self.base_url = "https://openapi.koreainvestment.com:9443"  # 실전투자 기준
+        self.base_url = "https://openapivts.koreainvestment.com:29443"  # 실전투자 기준
         self.token = None
 
     def get_access_token(self):
