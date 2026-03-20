@@ -1,10 +1,21 @@
-from flask import render_template
+from flask import jsonify, request
 from . import auth_bp
 
-@auth_bp.route('/login')
-def login():
-    return render_template('auth/login.html')
-
-@auth_bp.route('/signup')
+@auth_bp.route('/signup', methods=['POST'])
 def signup():
-    return render_template('auth/signup.html')
+    # 회원가입 및 초기 자금 지급 로직 예정
+    return jsonify({"user_id": 1, "nickname": "testuser", "message": "Signup successful with 100M cash"})
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    # 로그인 및 토큰 발급 로직 예정
+    return jsonify({"access_token": "dummy-token-12345"})
+
+@auth_bp.route('/me', methods=['GET'])
+def me():
+    # 내 자산 정보 조회 로직 예정
+    return jsonify({
+        "nickname": "testuser",
+        "cash": 100000000,
+        "deposit": 0
+    })
