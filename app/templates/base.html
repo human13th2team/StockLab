@@ -4,26 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StockLab - {% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     {% block styles %}{% endblock %}
 </head>
-<body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{{ url_for('main.index') }}">홈</a></li>
-                <li><a href="{{ url_for('analysis.report') }}">분석</a></li>
-                <li><a href="{{ url_for('auth.login') }}">로그인</a></li>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+    <header class="bg-indigo-700 text-white shadow-lg">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold tracking-tight">
+                <a href="{{ url_for('main.index') }}" class="hover:text-indigo-200 transition-colors">StockLab</a>
+            </div>
+            <ul class="flex space-x-8 font-medium">
+                <li><a href="{{ url_for('main.index') }}" class="hover:text-indigo-200 transition-colors">홈</a></li>
+                <li><a href="{{ url_for('analysis.report') }}" class="hover:text-indigo-200 transition-colors">분석 리포트</a></li>
+                <li><a href="{{ url_for('auth.login') }}" class="px-4 py-2 bg-indigo-500 rounded-lg hover:bg-indigo-400 transition-all">로그인</a></li>
             </ul>
         </nav>
     </header>
 
-    <main>
-        {% block content %}{% endblock %}
+    <main class="container mx-auto px-6 py-12 flex-grow">
+        <div class="bg-white rounded-2xl shadow-sm p-8 md:p-12 border border-slate-100">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
-    <footer>
-        <p>&copy; 2024 StockLab Team Project</p>
+    <footer class="bg-slate-800 text-slate-400 py-8 border-t border-slate-700">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 StockLab Team Project. All rights reserved.</p>
+        </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
