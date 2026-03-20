@@ -9,35 +9,39 @@ KIS(한국투자증권) OAUTH 연동 함수
     - OAuth2 인증 토큰 발급
 """
 import dataclasses
-import os
-
 import requests
 from dotenv import load_dotenv
-
 import kis_dto
+import auth_to_redis # ← import
+
 load_dotenv()
 
-#1. 웹소켓 접근키
 def get_approval_key():
+    # 캐시된 값 있으면 그거 쓰기
+    cached = auth_to_redis.get_approval_key_from_redis()
+    if cached:
+        return cached.decode()
+
     header_dict = dataclasses.asdict(kis_dto.ApprovalRequestHeader())
     body_dict = dataclasses.asdict(kis_dto.ApprovalRequestBody())
-    # print(body_dict)
     res = requests.post(
         "https://openapivts.koreainvestment.com:29443/oauth2/Approval",
         headers=header_dict,
         json=body_dict
     )
-    # print(res)
-    rescode = res.status_code
-    if rescode == 200: # 토큰 정상 발급
-        my_approval_key = kis_dto.ApprovalResponseBody(res.json()).approval_key
-        # print(my_approval_key)
+    if res.status_code == 200:
+        my_approval_key = kis_dto.ApprovalResponseBody(**res.json())
+        auth_to_redis.store_approval_key(my_approval_key.approval_key)  # ← 저장
+        return my_approval_key.approval_key
     else:
-        print("Get Approval key fail!\nYou have to check your app!!\n")
-        print(f"Failed code: {rescode}")
+        print(f"Get Approval key fail! code: {res.status_code}")
 
-#2. REST API 접근 토큰
 def get_access_token():
+    # 캐시된 값 있으면 그거 쓰기
+    cached = auth_to_redis.get_access_token_from_redis()
+    if cached:
+        return cached.decode()
+
     header_dict = dataclasses.asdict(kis_dto.AccessRequestHeader())
     body_dict = dataclasses.asdict(kis_dto.AccessRequestBody())
     res = requests.post(
@@ -45,32 +49,23 @@ def get_access_token():
         headers=header_dict,
         json=body_dict
     )
-    rescode = res.status_code
-    if rescode == 200: # 토큰 정상 발급
-        my_access_token = kis_dto.AccessResponseBody(res.json())
-        print(my_access_token)
+    if res.status_code == 200:
+        my_access_token = kis_dto.AccessResponseBody(**res.json())
+        auth_to_redis.store_access_token(my_access_token.access_token)  # ← 저장
+        return my_access_token.access_token
     else:
-        print("Get Approval key fail!\nYou have to check your app!!\n")
-        print(f"Failed code: {rescode}")
+        print(f"Get Access token fail! code: {res.status_code}")
 
 # if __name__ == "__main__":
-#     print("--- KIS 토큰 발급 테스트 시작 ---")
+#     print("--- KIS 토큰 발급 테스트 ---")
 #
-#     # 1. 웹소켓 키 출력 테스트
-#     try:
-#         get_approval_key()
-#     except Exception as e:
-#         print(f"웹소켓 에러: {e}")
+#     # 1. 처음 호출 - API 호출 후 Redis 저장
+#     token = get_access_token()
+#     print(f"토큰: {token}")
 #
-#     print("\n" + "="*30 + "\n")
+#     # 2. 두번째 호출 - Redis에서 꺼내옴 (API 호출 안 함)
+#     token2 = get_access_token()
+#     print(f"캐시된 토큰: {token2}")
 #
-#     # 2. REST API 토큰 출력 테스트
-#     try:
-#         get_access_token()
-#     except Exception as e:
-#         print(f"REST API 에러: {e}")
-#   python kis_token.py > 테스트 가능
-
-
-
-
+#     # 같은 값이면 Redis 캐시 정상 동작
+#     print(f"동일한 토큰: {token == token2}")
