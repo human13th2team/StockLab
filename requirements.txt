@@ -19,3 +19,4 @@ typing_extensions==4.15.0
 Werkzeug==3.1.6
 Flask-APScheduler==1.13.1
 requests==2.32.3
+redis==5.0.1

@@ -10,17 +10,27 @@ def create_app(config_name='dev'):
     db.init_app(app)
     migrate.init_app(app, db)
     
+    # Redis 초기화
+    from app.extensions import redis_client
+    redis_client.connection_pool.connection_kwargs.update({
+        'host': app.config.get('REDIS_HOST', 'localhost'),
+        'port': app.config.get('REDIS_PORT', 6379),
+        'db': app.config.get('REDIS_DB', 0),
+        'password': app.config.get('REDIS_PASSWORD')
+    })
+    
     # Scheduler 초기화 및 시작
     scheduler.init_app(app)
     
-    # 워커 등록 (임포트 시 데코레이터에 의해 스케줄러에 등록됨)
+    # 워커 등록 및 실시간 리스너 시작
     with app.app_context():
         from app.features.execution import worker
+        worker.start_redis_listener(app)
         
     if not scheduler.running:
         scheduler.start()
     
-    # 모델 등록 (마이그레이션을 위해 모든 모델 로드)
+    # 모델 등록
     from app import models
     
     # Blueprint 등록
