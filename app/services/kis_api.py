@@ -20,9 +20,14 @@ class KisApi:
         pass
 
     def get_current_price(self, ticker_code):
-        """실시간 현재가 조회"""
-        # /uapi/domestic-stock/v1/quotations/inquire-price 호출 로직
-        pass
+        """실시간 현재가 조회 (테스트용 목업)"""
+        # 실제 구현 전까지는 테스트를 위해 고정가 또는 랜덤가 반환
+        mock_prices = {
+            "005930": 72000,  # 삼성전자
+            "000660": 160000, # SK하이닉스
+            "035420": 180000  # NAVER
+        }
+        return mock_prices.get(ticker_code, 50000)
 
     def search_stocks(self, query):
         """종목 검색 (명칭/코드)"""
