@@ -1,12 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_apscheduler import APScheduler
+from app.extensions import db, migrate, scheduler
 from config import config_by_name
-
-db = SQLAlchemy()
-migrate = Migrate()
-scheduler = APScheduler()
 
 def create_app(config_name='dev'):
     app = Flask(__name__)
@@ -23,7 +17,8 @@ def create_app(config_name='dev'):
     with app.app_context():
         from app.features.execution import worker
         
-    scheduler.start()
+    if not scheduler.running:
+        scheduler.start()
     
     # 모델 등록 (마이그레이션을 위해 모든 모델 로드)
     from app import models
@@ -34,15 +29,13 @@ def create_app(config_name='dev'):
     from app.features.trading import trading_bp
     from app.features.execution import execution_bp
     from app.features.analysis import analysis_bp
+    from app.features.main import main_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(market_bp, url_prefix='/api/stocks')
     app.register_blueprint(trading_bp, url_prefix='/api/orders')
     app.register_blueprint(execution_bp, url_prefix='/api/executions')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
-    
-    # 메인 페이지
-    from app.features.main import main_bp
     app.register_blueprint(main_bp)
     
     return app

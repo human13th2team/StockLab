@@ -1,4 +1,4 @@
-from app import db
+from app.extensions import db
 from .user import User
 from .order import Order, OrderType, OrderStatus
 from .holding import Holding

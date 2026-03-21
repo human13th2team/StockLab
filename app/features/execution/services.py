@@ -1,4 +1,4 @@
-from app import db
+from app.extensions import db
 from app.models.order import Order, OrderStatus, OrderType
 from app.models.execution import Execution
 from app.models.holding import Holding

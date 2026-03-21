@@ -3,7 +3,7 @@ from . import analysis_bp
 
 @analysis_bp.route('/report')
 def report():
-    return render_template('analysis/report.html')
+    return render_template('features/analysis/report.html')
 
 @analysis_bp.route('/portfolio', methods=['GET'])
 def get_portfolio():

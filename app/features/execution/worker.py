@@ -1,9 +1,9 @@
-from app import db, scheduler
-from app.features.execution.service import ExecutionService
+from app.extensions import db, scheduler
+from app.features.execution.services import ExecutionService
 from app.models.order import Order, OrderStatus
 # 팀원 A(탁유제)의 KisApi 또는 공통 함수를 가져와야 함
 # 현재는 skeleton이므로 임시 목업 함수 활용 제안
-from app.services.kis_api import KisApi
+from app.api_clients.kis_api import KisApi
 
 kis_api = KisApi()
 
