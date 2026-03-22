@@ -7,6 +7,9 @@ KIS(한국투자증권) OAUTH 연동 함수
 
 주요 기능:
     - OAuth2 인증 토큰 발급
+
+ToDo:
+    - 서비스 구조로 바꾸기...
 """
 import dataclasses
 
