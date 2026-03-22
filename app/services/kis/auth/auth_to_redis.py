@@ -28,7 +28,7 @@ def store_access_token(value):
         print(f"Store access_token error: {e}")
 
 def get_approval_key_from_redis():
-    return r.get("approval_key")
+    return r.get("approval_key").decode("utf-8")
 
 def get_access_token_from_redis():
-    return r.get("access_token")
+    return r.get("access_token").decode("utf-8")
