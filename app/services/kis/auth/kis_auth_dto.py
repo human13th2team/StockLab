@@ -33,6 +33,18 @@ class ApprovalResponseHeader:
 class ApprovalResponseBody:
     approval_key: str=""
 
+    # 1. getter를 직접 선언하는 방법
+    # def get_approval_key(self):
+    #     return self.approval_key
+
+    # 2. @property를 사용하는 방법
+    # 원래 파이썬 클래스의 멤버변수는 언더바가 붙지만
+    # 이 클래스는 API의 response이기 때문에 언어바를 붙이지 않았고
+    # 함수명을 변수명과 중복되게 할 수 없었음
+    @property
+    def get_approval_key(self):
+        return self.approval_key
+
 """Classes for get ACCESS KEY."""
 @dataclass
 class AccessRequestHeader:
@@ -51,6 +63,10 @@ class AccessResponseHeader:
 @dataclass
 class AccessResponseBody:
     access_token: str=""
-    token_type: str="" # "Bearer"
-    expires_in: float=0.0 # 86400 (seconds)
     access_token_token_expired: str="" # "2026-03-21 15:40:50"
+    token_type: str="" # "Bearer"
+    expires_in: int=0 # 86400 (seconds)
+
+    @property
+    def get_access_token(self):
+        return self.access_token
