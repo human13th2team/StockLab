@@ -10,6 +10,10 @@ def create_app(config_name='dev'):
     db.init_app(app)
     migrate.init_app(app, db)
     
+    # SocketIO 초기화
+    from app.extensions import socketio
+    socketio.init_app(app)
+    
     # Redis 초기화
     from app.extensions import redis_client
     redis_client.connection_pool.connection_kwargs.update({
