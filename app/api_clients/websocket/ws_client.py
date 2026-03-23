@@ -5,12 +5,11 @@ import json
 
 import os
 from dotenv import load_dotenv
-from pymysql import connect
 
-from app.services.kis.auth.auth_to_redis import get_approval_key_from_redis
+from app.api_clients.kis.auth.auth_to_redis import get_approval_key_from_redis
 
 import ws_domestic_dto
-from app.services.kis.redis_client import init_redis
+from app.api_clients.kis.redis_client import init_redis
 
 load_dotenv()
 redis = init_redis()
@@ -28,10 +27,9 @@ conect_key = get_approval_key_from_redis()
 
 def on_open(ws):
     header = dataclasses.asdict(ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key))
-    # stocks = ('005930','000660','005935')
-    stocks = ('035720', '020560') # 시가총액이 20위권 밖인 카카오, 아시아나항공으로 테스트
+    stocks = ('005930','035720','020560')
     for stock in stocks:
-        body = dataclasses.asdict(ws_domestic_dto.MarketPriceRequestBody(tr_key=stock))
+        body = ws_domestic_dto.MarketPriceRequestBody(tr_key=stock).wrap_marketprice_request_body()
         request = {
             "header": header,
             "body": body
@@ -52,10 +50,24 @@ def on_message(ws, msg):
             return
         data = raw_data.split('^')
         price = int(data[STCK_PRPR_IDX])
+        stock_code = data[MKSC_SHRN_ISCD_IDX]
+        # 가장 최신값
+        last_price = redis.lindex(f"price:{stock_code}", 0)
         # high  = int(data[STCK_HGPR_IDX]) # 주식 최고가
-        # low   = int(data[STCK_LWPR_IDX]) # 주식 최저가
-        redis.lpush(f"price:{data[MKSC_SHRN_ISCD_IDX]}", price)
-        redis.ltrim(f"price:{data[MKSC_SHRN_ISCD_IDX]}", 0, 9)
+        # low   = int(data[STCK_LWPR_IDX]) # 주식 최저가 > redis에서 최신값으로 유지할 필요가 있으면 주석 해제
+        # 최신값이 존재하하는데 지난 가격과 동일한 경우 저장 안하기
+        if last_price is not None and int(last_price) == price:
+            print(f"{stock_code} Redis not updated (가격 동일: {price})")
+        else:
+            redis.lpush(f"price:{stock_code}", price)
+            redis.ltrim(f"price:{stock_code}", 0, 9)
+            # 체결 엔진 알림 발행
+            message = {
+                "ticker_code": stock_code,
+                "current_price": price
+            }
+            redis.publish("price_updates", json.dumps(message))
+
     else:
         print("📩 MESSAGE")
         print(msg)

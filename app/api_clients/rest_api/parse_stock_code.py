@@ -1,14 +1,14 @@
 import sys, os
 import time
 
-sys.path.insert(0, "/Users/yuje/StockLab")
+sys.path.insert(0, "/")
 import asyncio
 
 import pandas as pd
 import requests
 
 
-from app.services.kis.auth.auth_to_redis import get_access_token_from_redis
+from app.api_clients.auth.auth_to_redis import get_access_token_from_redis
 
 API_LIMIT = 20
 TOTAL_REQUEST = 785

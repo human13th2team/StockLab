@@ -16,16 +16,15 @@ import dataclasses
 import requests
 from dotenv import load_dotenv
 
-import kis_auth_dto
-import auth_to_redis
+from app.api_clients.auth import auth_to_redis, kis_auth_dto
 
 load_dotenv()
 
 def get_approval_key():
-    # 캐시된 값 있으면 캐시값 return
-    cached = auth_to_redis.get_approval_key_from_redis()
-    if cached:
-        return cached.decode()
+    # 갱신이 필요한지 여부 체크 (Boolean)
+    status_ok = auth_to_redis.is_approval_key_ttl_expired()
+    if status_ok:
+        return auth_to_redis.get_approval_key_from_redis()
 
     header_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestBody())
@@ -35,17 +34,18 @@ def get_approval_key():
         json=body_dict
     )
     if res.status_code == 200:
-        my_approval_key = kis_auth_dto.ApprovalResponseBody(res.json())
-        auth_to_redis.store_approval_key(my_approval_key.get_approval_key)  # ← 저장
+        my_approval_key = kis_auth_dto.ApprovalResponseBody(res.json().get("approval_key"))
+        auth_to_redis.store_approval_key(my_approval_key.get_approval_key)
         print("✅ Set Approval key by /oauth2/Approval")
+        return my_approval_key.get_approval_key
     else:
         print(f"🐦‍🔥 Get Approval key fail! code: {res.status_code}")
 
 def get_access_token():
     # 캐시된 값 있으면 캐시값 return
-    cached = auth_to_redis.get_access_token_from_redis()
-    if cached:
-        return cached.decode()
+    status_ok = auth_to_redis.is_access_token_ttl_expired()
+    if status_ok:
+        return auth_to_redis.get_access_token_from_redis()
 
     header_dict = dataclasses.asdict(kis_auth_dto.AccessRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.AccessRequestBody())
@@ -65,14 +65,7 @@ def get_access_token():
         )
         auth_to_redis.store_access_token(my_access_token.get_access_token)
         print("✅ Set Access token by /oauth2/tokenP")
+        return my_access_token.get_access_token 
     else:
-        print(f"🐦‍🔥Get Access token fail! code: {res.json().data['error_description']}")
+        print(f"🐦‍🔥Get Access token fail! code: {res.json().get('error_description')}")
 
-# if __name__ == "__main__":
-#     print("--- KIS 발급 테스트 ---")
-#
-#     token = get_approval_key()
-#     print(f"키: {token}")
-#
-#     token2 = get_access_token()
-#     print(f"토큰: {token2}")

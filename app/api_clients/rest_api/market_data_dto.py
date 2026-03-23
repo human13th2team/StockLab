@@ -1,7 +1,7 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from app.services.kis.auth.auth_to_redis import get_access_token_from_redis
+from app.api_clients.auth.auth_to_redis import get_access_token_from_redis
 
 
 @dataclass

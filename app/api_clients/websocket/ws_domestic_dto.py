@@ -11,7 +11,7 @@ class MarketPriceRequestHeader:
 @dataclass
 class MarketPriceRequestBody:
     tr_id: str="H0STCNT0"
-    tr_key: str="035720" #카카오
+    tr_key: str="035720" # default 카카오
 
     def wrap_marketprice_request_body(self):
         return {"input": asdict(self)}
