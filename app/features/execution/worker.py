@@ -37,10 +37,3 @@ def start_redis_listener(app):
     thread = threading.Thread(target=run_listener, daemon=True)
     thread.start()
 
-# 기존 APScheduler 작업은 하위 호환성 또는 백업용으로 유지하거나 제거 가능
-# 여기서는 실시간 처리를 위해 Redis 구독 방식으로 전환하였으므로 주석 처리하거나 제거 제안
-@scheduler.task('interval', id='monitor_prices_backup', seconds=60)
-def backup_price_monitor():
-    """실시간 구독이 실패할 경우를 대비한 백업 폴링 (주기를 길게 설정)"""
-    print("[Worker] 백업 시세 감시 실행 중...")
-    # 필요한 경우 기존 monitor_stock_prices() 로직 실행

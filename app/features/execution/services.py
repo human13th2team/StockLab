@@ -56,13 +56,18 @@ class ExecutionService:
         )
         db.session.add(execution)
 
-        # 3. 홀딩(Holdings) 업데이트 (수량 증가/감소)
-        # 매수 시: 해당 종목의 보유 수량 증가
-        # 매도 시: (매도 시점에는 이미 Trading에서 수량이 차감되었을 것이므로 여기서는 확정 처리만 하거나 추가 로직 필요)
-        # 팀 분담 상 'holdings 수량 증가'가 유재복님 담당이므로 매수 체결 시 증가 로직 구현
+        # 3. 자산(cash, deposit) 및 홀딩(Holdings) 업데이트
+        from app.models.user import User
+        user = User.query.get(order.user_id)
         holding = Holding.query.filter_by(user_id=order.user_id, ticker_code=order.ticker_code).first()
         
+        total_price = final_price * order.quantity
+
         if order.order_type == OrderType.BUY:
+            # 현금 차감 및 예수금(투자금) 증가
+            user.cash -= total_price
+            user.deposit += total_price
+
             if holding:
                 # 평균 단가 및 수량 업데이트
                 old_total_cost = float(holding.avg_price) * holding.available_qty
@@ -83,11 +88,21 @@ class ExecutionService:
         
         elif order.order_type == OrderType.SELL:
             if holding:
-                # 매도 시 frozen_qty 차감 (문광명님이 동결시켰을 것이라 가정)
+                # 현금 증가 (현재가 기준)
+                user.cash += total_price
+                
+                # 예수금(투자금) 감소 (기존 매매가 기준 차감으로 투자 원금 회수 처리)
+                # 만약 전체 수량을 다 파는게 아니라면 부분 차감
+                cost_basis = float(holding.avg_price) * order.quantity
+                user.deposit -= cost_basis
+
+                # 매도 시 frozen_qty 차감 (Trading에서 동결시켰다고 가정)
                 holding.frozen_qty -= order.quantity
-            else:
-                # 보유 데이터가 없는 비정상 상황 처리 (필요시)
-                pass
+                
+                # 만약 보유 수량이 0이 되면 관리 필요 (여기서는 수량만 차감)
+                if holding.available_qty + holding.frozen_qty == 0:
+                    # 필요시 삭제하거나 유지
+                    pass
         
         # 매도의 경우 문광명(Trading)님이 주문 접수 시 이미 holdings에서 수량을 frozen 시켰을 확률이 높음.
         # 여기서는 체결 확정 로그만 남기는 것으로 설계.
