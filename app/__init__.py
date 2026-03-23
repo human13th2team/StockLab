@@ -1,10 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from app.extensions import db, migrate, scheduler
 from config import config_by_name
-
-db = SQLAlchemy()
-migrate = Migrate()
 
 def create_app(config_name='dev'):
     app = Flask(__name__)
@@ -14,24 +10,42 @@ def create_app(config_name='dev'):
     db.init_app(app)
     migrate.init_app(app, db)
     
-    # 모델 등록 (마이그레이션을 위해 모든 모델 로드)
+    # Redis 초기화
+    from app.extensions import redis_client
+    redis_client.connection_pool.connection_kwargs.update({
+        'host': app.config.get('REDIS_HOST', 'localhost'),
+        'port': app.config.get('REDIS_PORT', 6379),
+        'db': app.config.get('REDIS_DB', 0),
+        'password': app.config.get('REDIS_PASSWORD')
+    })
+    
+    # Scheduler 초기화 및 시작
+    scheduler.init_app(app)
+    
+    # 워커 등록 및 실시간 리스너 시작
+    with app.app_context():
+        from app.features.execution import worker
+        worker.start_redis_listener(app)
+        
+    if not scheduler.running:
+        scheduler.start()
+    
+    # 모델 등록
     from app import models
     
     # Blueprint 등록
     from app.features.auth import auth_bp
     from app.features.market import market_bp
     from app.features.trading import trading_bp
-    from app.features.history import history_bp
+    from app.features.execution import execution_bp
     from app.features.analysis import analysis_bp
+    from app.features.main import main_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(market_bp, url_prefix='/api/stocks')
     app.register_blueprint(trading_bp, url_prefix='/api/orders')
-    app.register_blueprint(history_bp, url_prefix='/api/executions')
+    app.register_blueprint(execution_bp, url_prefix='/api/executions')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
-    
-    # 메인 페이지
-    from app.features.main import main_bp
     app.register_blueprint(main_bp)
     
     return app

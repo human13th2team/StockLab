@@ -1,7 +1,7 @@
 from flask import jsonify, request
-from . import history_bp
+from . import execution_bp
 
-@history_bp.route('', methods=['GET'])
+@execution_bp.route('', methods=['GET'])
 def get_executions():
     return jsonify([{
         "id": 1, 
@@ -11,6 +11,6 @@ def get_executions():
         "created_at": "2024-03-20 12:00:00"
     }])
 
-@history_bp.route('/<int:execution_id>', methods=['GET'])
+@execution_bp.route('/<int:execution_id>', methods=['GET'])
 def get_execution_detail(execution_id):
     return jsonify({"execution_id": execution_id, "details": "..."})
