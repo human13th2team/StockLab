@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from app.api_clients import redis_client
 
 load_dotenv()
-
 r = redis_client.init_redis()
 def redis_connection():
     return r
@@ -38,16 +37,16 @@ def get_access_token_from_redis():
     return val.decode("utf-8") if val else ""
 
 # 만료(False) 조건: 키가 존재하지 않거나, ttl이 600초 이내로 남은 경우
-def is_access_token_ttl_expired():
-    is_token_expired = True
+def is_access_token_ttl_valid():
+    is_token_valid = True
     token_ttl = r.ttl("access_token")
     if (token_ttl is None) or (token_ttl < 600):
-        is_token_expired = False
-    return is_token_expired
+        is_token_valid = False
+    return is_token_valid
 
-def is_approval_key_ttl_expired():
-    is_key_expired = True
+def is_approval_key_ttl_valid():
+    is_key_valid = True
     key_ttl = r.ttl("approval_key")
     if (key_ttl is None) or (key_ttl < 600):
-        is_key_expired = False
-    return is_key_expired
+        is_key_valid = False
+    return is_key_valid
