@@ -6,11 +6,11 @@ import json
 import os
 from dotenv import load_dotenv
 
-from app.api_clients.kis.auth.auth_to_redis import get_approval_key_from_redis
+from app.models.stock import Stock
+from app.api_clients.auth.auth_to_redis import get_approval_key_from_redis
 
 import ws_domestic_dto
-from app.api_clients.kis.redis_client import init_redis
-
+from app.api_clients.redis_client import init_redis
 load_dotenv()
 redis = init_redis()
 
@@ -27,7 +27,8 @@ conect_key = get_approval_key_from_redis()
 
 def on_open(ws):
     header = dataclasses.asdict(ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key))
-    stocks = ('005930','035720','020560')
+    # stocks에 저장된 종목 모두 구독
+    stocks = [stock.ticker_code for stock in Stock.query.all()]
     for stock in stocks:
         body = ws_domestic_dto.MarketPriceRequestBody(tr_key=stock).wrap_marketprice_request_body()
         request = {
