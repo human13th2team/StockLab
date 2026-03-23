@@ -28,10 +28,10 @@ class admin_dashboard_service:
         access_ttl = r.ttl('access_token')
         approval_ttl = r.ttl('approval_key')
 
-        return [
-            {"access_token" : self.get_token_status(access_ttl)},
-            {"approval_key": self.get_token_status(approval_ttl)}
-        ]
+        return {
+            "access_token" : self.get_token_status(access_ttl),
+            "approval_key": self.get_token_status(approval_ttl)
+        }
 
     @staticmethod
     def get_user_ranking():
@@ -39,9 +39,9 @@ class admin_dashboard_service:
         # 현금 + 주식수량*평단가
         # 모든 사용자(User)의 User.cash + Holding.available_qty*Holding.avg_price
         user_ranking_query = db.session.query(
-            User.nickname, # User 테이블에서 가져옴
-            (User.cash + func.coalesce(func.sum(Holding.quantity * Holding.current_price), 0)).label('all_cash')
-        ).outerjoin(Holding, User.userid == Holding.userid).group_by(User.userid, User.nickname)
+            User.nickname, 
+            (User.cash + func.coalesce(func.sum(Holding.available_qty * Holding.avg_price), 0)).label('all_cash')
+        ).outerjoin(Holding, User.id == Holding.user_id).group_by(User.id, User.nickname, User.cash)
         # 1. 상위 3명 (자산 내림차순)
         top_rankers = user_ranking_query.order_by(desc('all_cash')).limit(3).all()
 
@@ -66,11 +66,11 @@ class admin_dashboard_service:
         ).count()
         kosdaq_count = Stock.query.filter_by(
             market_type="KOSDAQ"
-        )
+        ).count()
         # print("짝수" if num % 2 == 0 else "홀수")
         return asset_activate_dto(
             is_kospi_activate=True if kospi_count > 0 else False,
-            is_kosdaq_activate=True if kospi_count > 0 else False
+            is_kosdaq_activate=True if kosdaq_count > 0 else False
         )
 
     def get_admin_dashboard(self):
