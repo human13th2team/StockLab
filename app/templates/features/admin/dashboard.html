@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -211,9 +212,20 @@
             justify-content: center;
         }
 
-        .ic-blue { background-color: #eff6ff; color: var(--primary); }
-        .ic-purple { background-color: #f3e8ff; color: #9333ea; }
-        .ic-rose { background-color: #ffe4e6; color: #e11d48; }
+        .ic-blue {
+            background-color: #eff6ff;
+            color: var(--primary);
+        }
+
+        .ic-purple {
+            background-color: #f3e8ff;
+            color: #9333ea;
+        }
+
+        .ic-rose {
+            background-color: #ffe4e6;
+            color: #e11d48;
+        }
 
         .stat-value {
             font-size: 28px;
@@ -223,9 +235,17 @@
             text-transform: capitalize;
         }
 
-        .status-healthy { color: var(--success); }
-        .status-warning { color: var(--warning); }
-        .status-critical { color: var(--danger); }
+        .status-healthy {
+            color: var(--success);
+        }
+
+        .status-warning {
+            color: var(--warning);
+        }
+
+        .status-critical {
+            color: var(--danger);
+        }
 
         /* Rankings Section */
         .rankings-grid {
@@ -253,16 +273,52 @@
             gap: 8px;
         }
 
-        .table-container { width: 100%; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background-color: #f8fafc; color: var(--text-muted); font-size: 12px; font-weight: 500; padding: 12px 24px; }
-        td { padding: 16px 24px; font-size: 14px; border-bottom: 1px solid var(--border-color); }
-        tr:last-child td { border-bottom: none; }
+        .table-container {
+            width: 100%;
+        }
 
-        .col-rank { width: 60px; font-weight: 600; }
-        .text-blue { color: var(--primary); font-weight: 600; }
-        .text-red { color: var(--danger); font-weight: 600; }
-        .text-right { text-align: right; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 12px 24px;
+        }
+
+        td {
+            padding: 16px 24px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .col-rank {
+            width: 60px;
+            font-weight: 600;
+        }
+
+        .text-blue {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .text-red {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .text-right {
+            text-align: right;
+        }
 
         /* Settings Grid */
         .settings-grid {
@@ -276,34 +332,125 @@
             padding: 24px;
         }
 
-        .form-group { margin-bottom: 24px; }
-        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
-
-        .input-wrapper { position: relative; }
-        .input-wrapper input {
-            width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 20px; font-weight: 600; outline: none; background: #f8fafc; color: var(--text-main);
+        .form-group {
+            margin-bottom: 24px;
         }
-        .input-suffix { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 600; }
-        .form-hint { font-size: 12px; color: #94a3b8; margin-top: 8px; line-height: 1.5; }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 20px;
+            font-weight: 600;
+            outline: none;
+            background: #f8fafc;
+            color: var(--text-main);
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
 
         /* Toggles List */
-        .toggle-list { display: flex; flex-direction: column; }
-        .toggle-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-color); }
-        .toggle-item:first-child { padding-top: 0; }
-        .toggle-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .toggle-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-        .toggle-info p { font-size: 12px; color: var(--text-muted); }
+        .toggle-list {
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* Switch */
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: default; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; opacity: 0.7;}
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        input:checked + .slider { background-color: var(--primary); opacity: 1;}
-        input:checked + .slider:before { transform: translateX(20px); }
+        .toggle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
 
+        .toggle-item:first-child {
+            padding-top: 0;
+        }
+
+        .toggle-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .toggle-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .toggle-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Status Badge for Readonly values */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-active {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-active::before {
+            content: "";
+            display: block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #16a34a;
+        }
+
+        .badge-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-inactive::before {
+            content: "";
+            display: block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #dc2626;
+        }
     </style>
 </head>
+
 <body>
 
     <!-- Sidebar -->
@@ -312,10 +459,15 @@
             <h1>StockLab</h1>
             <span>Admin Console</span>
         </div>
-        
+
         <ul class="nav-menu">
             <li class="nav-item active">
-                <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z">
+                    </path>
+                </svg>
                 전역 설정 (대시보드)
             </li>
         </ul>
@@ -334,7 +486,7 @@
 
         <!-- Dynamic Content Area -->
         <div class="content-area">
-            
+
             <div class="page-header">
                 <div>
                     <h2>시스템 관리</h2>
@@ -348,7 +500,13 @@
                     <div class="stat-header">
                         전체 사용자 수
                         <div class="stat-icon ic-blue">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 010 7.75"></path>
+                            </svg>
                         </div>
                     </div>
                     <div class="stat-value" id="val_total_users">-</div>
@@ -358,7 +516,11 @@
                     <div class="stat-header">
                         API Access Token 상태
                         <div class="stat-icon ic-purple">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                            </svg>
                         </div>
                     </div>
                     <div class="stat-value" id="val_access_token">-</div>
@@ -368,7 +530,12 @@
                     <div class="stat-header">
                         API Approval Key 상태
                         <div class="stat-icon ic-rose">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                                </path>
+                            </svg>
                         </div>
                     </div>
                     <div class="stat-value" id="val_approval_key">-</div>
@@ -380,7 +547,15 @@
                 <!-- Top 랭킹 -->
                 <div class="card">
                     <div class="card-header">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue"><path d="M18 15V3"></path><path d="M14 7h8"></path><path d="M6 21v-8"></path><path d="M2 17h8"></path><path d="M12 21v-4"></path><path d="M8 21h8"></path></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="text-blue">
+                            <path d="M18 15V3"></path>
+                            <path d="M14 7h8"></path>
+                            <path d="M6 21v-8"></path>
+                            <path d="M2 17h8"></path>
+                            <path d="M12 21v-4"></path>
+                            <path d="M8 21h8"></path>
+                        </svg>
                         자산 상위 랭킹 (Top)
                     </div>
                     <div class="table-container">
@@ -393,7 +568,9 @@
                                 </tr>
                             </thead>
                             <tbody id="top_ranking_body">
-                                <tr><td colspan="3" style="text-align: center;">데이터 로딩 중...</td></tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: center;">데이터 로딩 중...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -402,7 +579,15 @@
                 <!-- Bottom 랭킹 -->
                 <div class="card">
                     <div class="card-header">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red"><path d="M18 9v12"></path><path d="M14 17h8"></path><path d="M6 3v8"></path><path d="M2 7h8"></path><path d="M12 3v4"></path><path d="M8 3h8"></path></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="text-red">
+                            <path d="M18 9v12"></path>
+                            <path d="M14 17h8"></path>
+                            <path d="M6 3v8"></path>
+                            <path d="M2 7h8"></path>
+                            <path d="M12 3v4"></path>
+                            <path d="M8 3h8"></path>
+                        </svg>
                         자산 하위 랭킹 (Bottom)
                     </div>
                     <div class="table-container">
@@ -415,7 +600,9 @@
                                 </tr>
                             </thead>
                             <tbody id="bottom_ranking_body">
-                                <tr><td colspan="3" style="text-align: center;">데이터 로딩 중...</td></tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: center;">데이터 로딩 중...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -427,7 +614,13 @@
                 <!-- 시뮬레이션 설정 -->
                 <div class="card">
                     <div class="card-header">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="text-blue">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z">
+                            </path>
+                        </svg>
                         시뮬레이션 기본 설정
                     </div>
                     <div class="settings-content">
@@ -445,8 +638,13 @@
                 <!-- 시장 활성화 관리 -->
                 <div class="card">
                     <div class="card-header">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                        국내 주식 활성화 관리
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="text-blue">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        주식 종목 활성화 여부
                     </div>
                     <div class="settings-content toggle-list">
                         <div class="toggle-item">
@@ -454,20 +652,16 @@
                                 <h4>KOSPI 시장</h4>
                                 <p>코스피 상장 주식 활성화 여부</p>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle_kospi" disabled>
-                                <span class="slider"></span>
-                            </label>
+                            <div id="badge_kospi" class="status-badge"
+                                style="background-color: #f1f5f9; color: #64748b;">확인 중</div>
                         </div>
                         <div class="toggle-item">
                             <div class="toggle-info">
                                 <h4>KOSDAQ 시장</h4>
                                 <p>코스닥 상장 주식 활성화 여부</p>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle_kosdaq" disabled>
-                                <span class="slider"></span>
-                            </label>
+                            <div id="badge_kosdaq" class="status-badge"
+                                style="background-color: #f1f5f9; color: #64748b;">확인 중</div>
                         </div>
                     </div>
                 </div>
@@ -492,7 +686,7 @@
             try {
                 const response = await fetch('/api/admin');
                 if (!response.ok) throw new Error('API 로딩 실패');
-                
+
                 const data = await response.json();
 
                 // 1. 전체 사용자 수
@@ -511,13 +705,28 @@
                 document.getElementById('val_seed_money').value = formatNumber(data.service_seed_money);
 
                 // 4. 자산 활성화 (KOSPI, KOSDAQ)
-                document.getElementById('toggle_kospi').checked = data.asset_activate_status.is_kospi_activate;
-                document.getElementById('toggle_kosdaq').checked = data.asset_activate_status.is_kosdaq_activate;
+                const kospiBadge = document.getElementById('badge_kospi');
+                if (data.asset_activate_status.is_kospi_activate) {
+                    kospiBadge.textContent = '활성됨';
+                    kospiBadge.className = 'status-badge badge-active';
+                } else {
+                    kospiBadge.textContent = '비활성';
+                    kospiBadge.className = 'status-badge badge-inactive';
+                }
+
+                const kosdaqBadge = document.getElementById('badge_kosdaq');
+                if (data.asset_activate_status.is_kosdaq_activate) {
+                    kosdaqBadge.textContent = '활성됨';
+                    kosdaqBadge.className = 'status-badge badge-active';
+                } else {
+                    kosdaqBadge.textContent = '비활성';
+                    kosdaqBadge.className = 'status-badge badge-inactive';
+                }
 
                 // 5. 상위 랭킹
                 const topTbody = document.getElementById('top_ranking_body');
                 topTbody.innerHTML = '';
-                if(data.rankings.top_users && data.rankings.top_users.length > 0) {
+                if (data.rankings.top_users && data.rankings.top_users.length > 0) {
                     data.rankings.top_users.forEach((user, index) => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -534,7 +743,7 @@
                 // 6. 하위 랭킹
                 const bottomTbody = document.getElementById('bottom_ranking_body');
                 bottomTbody.innerHTML = '';
-                if(data.rankings.bottom_users && data.rankings.bottom_users.length > 0) {
+                if (data.rankings.bottom_users && data.rankings.bottom_users.length > 0) {
                     data.rankings.bottom_users.forEach((user, index) => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
@@ -557,4 +766,5 @@
         document.addEventListener('DOMContentLoaded', fetchAdminData);
     </script>
 </body>
+
 </html>
