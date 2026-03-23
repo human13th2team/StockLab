@@ -39,6 +39,7 @@ def create_app(config_name='dev'):
     from app.features.trading import trading_bp
     from app.features.execution import execution_bp
     from app.features.analysis import analysis_bp
+    from app.features.admin import admin_bp
     from app.features.main import main_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -46,6 +47,7 @@ def create_app(config_name='dev'):
     app.register_blueprint(trading_bp, url_prefix='/api/orders')
     app.register_blueprint(execution_bp, url_prefix='/api/executions')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(main_bp)
     
     return app
