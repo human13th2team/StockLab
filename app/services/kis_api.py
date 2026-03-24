@@ -20,9 +20,9 @@ class KisApi:
         pass
 
     def get_current_price(self, ticker_code):
-        """실시간 현재가 조회"""
-        # /uapi/domestic-stock/v1/quotations/inquire-price 호출 로직
-        pass
+        """실시간 현재가 조회 (구조만 구성, 현재는 0 반환)"""
+        # 나중에 실시간 조회 테이블이나 실제 API 연결 시 수정 예정
+        return 0
 
     def search_stocks(self, query):
         """종목 검색 (명칭/코드)"""

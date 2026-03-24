@@ -2,49 +2,274 @@
 
 {% block title %}분석 리포트{% endblock %}
 
+{% block styles %}
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .typing-cursor::after {
+        content: '|';
+        animation: blink 1s infinite;
+    }
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+    .gradient-text {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
-    <div class="space-y-8">
-        <div class="flex justify-between items-end border-b border-slate-200 pb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-900 mb-2">분석 리포트</h1>
-                <p class="text-slate-500">실시간 주식 정보 및 트렌드 분석 결과를 확인할 수 있습니다.</p>
-            </div>
-            <div class="bg-indigo-50 text-indigo-700 font-bold px-4 py-2 rounded-lg text-sm border border-indigo-100">
-                AI 분석 완료
-            </div>
-        </div>
+<div id="root"></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- 샘플 카드 1 -->
-            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <p class="text-sm font-medium text-slate-500 mb-1">오늘의 한마디</p>
-                <p class="text-xl font-bold text-slate-900 italic">"분석 담당자님, 이곳을 멋지게 채워주세요!"</p>
-            </div>
-            <!-- 샘플 카드 2 -->
-            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <p class="text-sm font-medium text-slate-500 mb-1">상승 종목 비율</p>
-                <div class="flex items-center space-x-2">
-                    <span class="text-2xl font-bold text-emerald-600">65.4%</span>
-                    <span class="text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded shadow-sm">▲ 2.1%</span>
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const AnalysisDashboard = () => {
+        const [portfolio, setPortfolio] = useState(null);
+        const [aiAdvice, setAiAdvice] = useState('');
+        const [loading, setLoading] = useState(true);
+        const [analyzing, setAnalyzing] = useState(false);
+        const chartRef = useRef(null);
+        const chartInstance = useRef(null);
+
+        useEffect(() => {
+            fetchPortfolio();
+        }, []);
+
+        const fetchPortfolio = async () => {
+            try {
+                const response = await fetch('/api/analysis/portfolio');
+                const data = await response.json();
+                setPortfolio(data);
+                setLoading(false);
+                renderChart(data);
+            } catch (error) {
+                console.error("Error fetching portfolio:", error);
+                setLoading(false);
+            }
+        };
+
+        const renderChart = (data) => {
+            if (!chartRef.current) return;
+            
+            if (chartInstance.current) {
+                chartInstance.current.destroy();
+            }
+
+            const ctx = chartRef.current.getContext('2d');
+            
+            // 데이터 준비
+            const labels = ['현금', ...data.holdings.map(h => h.ticker_code)];
+            const values = [data.cash, ...data.holdings.map(h => h.current_value)];
+            const colors = [
+                '#e2e8f0', // Cash (Slate 200)
+                '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b' // Dynamic colors
+            ];
+
+            chartInstance.current = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 12, family: 'Inter' }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const value = context.raw;
+                                    return ` ${context.label}: ₩${value.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        };
+
+        const requestAIAnalysis = async () => {
+            setAnalyzing(true);
+            setAiAdvice('');
+            try {
+                const response = await fetch('/api/analysis/ai/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                
+                // 타이핑 효과 구현
+                let i = 0;
+                const advice = data.ai_advice_text;
+                const timer = setInterval(() => {
+                    setAiAdvice(prev => prev + advice[i]);
+                    i++;
+                    if (i >= advice.length) {
+                        clearInterval(timer);
+                        setAnalyzing(false);
+                    }
+                }, 20);
+            } catch (error) {
+                setAiAdvice("분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                setAnalyzing(false);
+            }
+        };
+
+        if (loading) {
+            return (
+                <div className="flex items-center justify-center p-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="space-y-8 animate-fadeIn">
+                {/* 헤더 */}
+                <div className="flex justify-between items-end border-b border-slate-100 pb-6">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900 mb-2">AI 포트폴리오 <span className="gradient-text">리포트</span></h1>
+                        <p className="text-slate-500 font-medium">{portfolio.user_nickname}님의 투자 현황입니다.</p>
+                    </div>
+                    <div className="hidden sm:block">
+                        <span className="text-sm text-slate-400 font-medium">마지막 업데이트: {new Date().toLocaleDateString()}</span>
+                    </div>
+                </div>
+
+                {/* 요약 카드 그리드 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="p-6 bg-indigo-50 rounded-3xl border border-indigo-100 transition-hover hover:shadow-md">
+                        <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">총 자산</p>
+                        <p className="text-2xl font-black text-indigo-900">₩{portfolio.total_asset.toLocaleString()}</p>
+                    </div>
+                    <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 transition-hover hover:shadow-md">
+                        <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1">전체 수익률</p>
+                        <div className="flex items-center space-x-2">
+                            <span className={`text-2xl font-black ${portfolio.total_roi >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                {portfolio.total_roi >= 0 ? '+' : ''}{portfolio.total_roi}%
+                            </span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${portfolio.total_roi >= 0 ? 'bg-emerald-200 text-emerald-800' : 'bg-rose-200 text-rose-800'}`}>
+                                {portfolio.total_roi >= 0 ? '▲' : '▼'} {Math.abs(portfolio.total_roi)}%
+                            </span>
+                        </div>
+                    </div>
+                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200 transition-hover hover:shadow-md">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">남은 자금</p>
+                        <p className="text-2xl font-black text-slate-700">₩{portfolio.cash.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                {/* 메인 분석 영역 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* 차트 영역 */}
+                    <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center">
+                        <h3 className="text-lg font-bold text-slate-800 self-start mb-6">자산 배분 현황</h3>
+                        <div className="relative w-full h-64">
+                            <canvas ref={chartRef}></canvas>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="text-xs font-bold text-slate-400 uppercase">분산 비중</span>
+                                <span className="text-xl font-black text-slate-800">Portfolio</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI 추천 영역 */}
+                    <div className="bg-slate-900 p-8 rounded-3xl shadow-xl text-white flex flex-col">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-bold">AI 투자 조언</h3>
+                            <button 
+                                onClick={requestAIAnalysis}
+                                disabled={analyzing}
+                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${analyzing ? 'bg-slate-700 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
+                            >
+                                {analyzing ? '분석 중...' : '분석 시작하기'}
+                            </button>
+                        </div>
+                        
+                        <div className="flex-grow flex flex-col justify-center min-h-[160px]">
+                            {aiAdvice ? (
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700">
+                                        <p className="text-sm leading-relaxed typing-cursor">{aiAdvice}</p>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Powered by Gemini & LangChain</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center space-y-4">
+                                    <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mx-auto">
+                                        <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    </div>
+                                    <p className="text-slate-400 text-sm">포트폴리오를 분석하여 최적의 투자 전략을 알려드립니다.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 보유 종목 상세 표 */}
+                <div className="overflow-hidden rounded-3xl border border-slate-100 shadow-sm">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                            <tr>
+                                <th className="px-6 py-4">종목코드</th>
+                                <th className="px-6 py-4">보유수량</th>
+                                <th className="px-6 py-4 text-right">매입단가</th>
+                                <th className="px-6 py-4 text-right">현재가</th>
+                                <th className="px-6 py-4 text-right">수익률</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {portfolio.holdings.map((stock, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 font-bold text-slate-800">{stock.ticker_code}</td>
+                                    <td className="px-6 py-4 text-slate-600">{stock.qty}주</td>
+                                    <td className="px-6 py-4 text-right text-slate-600">₩{stock.avg_price.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right font-bold text-slate-800">₩{stock.current_price.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <span className={`font-black ${stock.roi >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                            {stock.roi >= 0 ? '+' : ''}{stock.roi}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <!-- 샘플 카드 3 -->
-            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                <p class="text-sm font-medium text-slate-500 mb-1">위험 지수</p>
-                <div class="flex items-center space-x-2">
-                    <span class="text-2xl font-bold text-amber-600">보통</span>
-                    <span class="text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded shadow-sm">안정적</span>
-                </div>
-            </div>
-        </div>
+        );
+    };
 
-        <div class="p-12 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-center">
-            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">분석 데이터 대기 중</h3>
-            <p class="text-slate-500 mb-6">데이터를 수집하고 가공하면 여기에 차트와 표가 나타납니다.</p>
-            <button class="px-5 py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-all">데이터 수집 시작하기</button>
-        </div>
-    </div>
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<AnalysisDashboard />);
+</script>
 {% endblock %}
