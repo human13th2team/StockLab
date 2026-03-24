@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import jsonify
 
-from app.api_clients.kis.redis_client import init_redis
+from app.api_clients.redis_client import init_redis
 
 load_dotenv()
 
