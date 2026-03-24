@@ -15,7 +15,7 @@ class Order(db.Model):
     __tablename__ = 'orders'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     ticker_code = db.Column(db.String(10), nullable=False)
     order_type = db.Column(db.Enum(OrderType), nullable=False)
     target_price = db.Column(db.BigInteger, nullable=False)
@@ -23,8 +23,8 @@ class Order(db.Model):
     status = db.Column(db.Enum(OrderStatus), default=OrderStatus.PENDING)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 관계 설정
-    execution = db.relationship('Execution', backref='order', uselist=False)
+    # 관계 설정 (주문 삭제 시 체결 내역도 함께 삭제)
+    execution = db.relationship('Execution', backref='order', uselist=False, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Order {self.id}: {self.order_type} {self.ticker_code}>'

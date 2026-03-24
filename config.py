@@ -15,6 +15,10 @@ class Config:
     DB_NAME = os.environ.get('DB_NAME') or 'stocklab_db'
     
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    
+    # JWT Configuration
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'super-secret-jwt-key'
+    JWT_ACCESS_TOKEN_EXPIRES = 3600 # 1 hour
 
 class DevelopmentConfig(Config):
     DEBUG = True

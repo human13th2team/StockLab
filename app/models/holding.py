@@ -4,7 +4,7 @@ class Holding(db.Model):
     __tablename__ = 'holdings'
     
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     ticker_code = db.Column(db.String(10), nullable=False)
     available_qty = db.Column(db.Integer, default=0)
     frozen_qty = db.Column(db.Integer, default=0)

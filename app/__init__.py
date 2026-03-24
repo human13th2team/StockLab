@@ -1,18 +1,21 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 from config import config_by_name
 
 db = SQLAlchemy()
 migrate = Migrate()
+jwt = JWTManager()
 
 def create_app(config_name='dev'):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
     
-    # DB 및 Migrate 초기화
+    # DB, Migrate, JWT 초기화
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)
     
     # 모델 등록 (마이그레이션을 위해 모든 모델 로드)
     from app import models
