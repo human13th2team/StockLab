@@ -6,10 +6,10 @@ import json
 import os
 from dotenv import load_dotenv
 
-from app.api_clients.kis.auth.auth_to_redis import get_approval_key_from_redis
+from app.api_clients.auth.auth_to_redis import get_approval_key_from_redis
 
-import ws_domestic_dto
-from app.api_clients.kis.redis_client import init_redis
+from . import ws_domestic_dto
+from app.api_clients.redis_client import init_redis
 
 load_dotenv()
 redis = init_redis()

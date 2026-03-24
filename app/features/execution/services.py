@@ -104,5 +104,34 @@ class ExecutionService:
                     # 필요시 삭제하거나 유지
                     pass
         
-        # 매도의 경우 문광명(Trading)님이 주문 접수 시 이미 holdings에서 수량을 frozen 시켰을 확률이 높음.
-        # 여기서는 체결 확정 로그만 남기는 것으로 설계.
+    @staticmethod
+    def get_user_executions(user_id, ticker_code=None):
+        """사용자의 전체 또는 종목별 체결 내역 조회"""
+        query = db.session.query(
+            Execution.id,
+            Order.ticker_code,
+            Execution.final_price,
+            Execution.quantity,
+            Execution.created_at
+        ).join(Order, Execution.order_id == Order.id)\
+         .filter(Execution.user_id == user_id)
+         
+        if ticker_code:
+            query = query.filter(Order.ticker_code == ticker_code)
+            
+        return query.order_by(Execution.created_at.desc()).all()
+
+    @staticmethod
+    def get_execution_by_id(execution_id, user_id):
+        """특정 체결 상세 내역 조회"""
+        return db.session.query(
+            Execution.id,
+            Order.ticker_code,
+            Execution.final_price,
+            Execution.quantity,
+            Execution.created_at,
+            Order.order_type,
+            Order.status
+        ).join(Order, Execution.order_id == Order.id)\
+         .filter(Execution.id == execution_id, Execution.user_id == user_id)\
+         .first()
