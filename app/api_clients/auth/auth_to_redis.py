@@ -18,14 +18,13 @@ def redis_connection():
 
 def store_approval_key(value):
     try:
-        # 유효기간은 하루(86,400s)지만, 만료 전 갱신을 위해 86,000으로 TTL 설정
-        r.set("approval_key", value=value, ex=86000)
+        r.set("approval_key", value=value, ex=86400)
     except Exception as e:
         print(f"Store approval_key error: {e}")
 
 def store_access_token(value):
     try:
-        r.set("access_token", value=value, ex=86000)
+        r.set("access_token", value=value, ex=86400)
     except Exception as e:
         print(f"Store access_token error: {e}")
 

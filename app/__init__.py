@@ -31,7 +31,7 @@ def create_app(config_name='dev'):
     with app.app_context():
         from app.features.execution import worker
         worker.start_redis_listener(app)
-        
+
     if not scheduler.running:
         scheduler.start()
     
