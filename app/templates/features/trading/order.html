@@ -1,209 +1,128 @@
-<!DOCTYPE html>
-<html lang="ko">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockLab - 트레이딩</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-    <style>
-        body {
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-        }
+{% block title %}트레이딩 - StockLab{% endblock %}
 
-        .card {
-            background-color: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 12px;
-        }
+{% block styles %}
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+    .trading-body {
+        background-color: var(--dark-bg);
+        color: var(--dark-text-main);
+        /* Margin removed for base.html flexibility */
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+    }
 
-        .btn-buy {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
+    .trading-card {
+        background-color: var(--dark-card);
+        border: 1px solid var(--dark-border);
+        border-radius: var(--radius-lg);
+    }
 
-        .btn-sell {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
+    .kakao-btn-buy {
+        background-color: #FEE500;
+        color: #191919;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
 
-        .btn-buy:hover {
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
-        }
+    .kakao-btn-buy:hover {
+        background-color: #E6CF00;
+        transform: scale(1.02);
+    }
 
-        .btn-sell:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        }
+    .btn-sell-modern {
+        background-color: #4E5968;
+        color: white;
+        font-weight: 700;
+    }
 
-        .price-up {
-            color: #ef4444;
-        }
+    .btn-sell-modern:hover {
+        background-color: #3B444F;
+    }
 
-        .price-down {
-            color: #3b82f6;
-        }
+    .price-up { color: #F04452; }
+    .price-down { color: #3182F6; }
 
-        .orderbook-row {
-            transition: background 0.15s;
-        }
+    .orderbook-row:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
 
-        .orderbook-row:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
+    .tab-btn.active {
+        background-color: #FEE500;
+        color: #191919;
+    }
 
-        .tab-btn.active {
-            background-color: #ef4444;
-            color: white;
-        }
+    .tab-btn-sell.active {
+        background-color: #4E5968;
+        color: white;
+    }
 
-        .tab-btn-sell.active {
-            background-color: #3b82f6;
-            color: white;
-        }
+    .trading-input {
+        background-color: #2C2C2C;
+        border: 1px solid #3A3A3A;
+        color: white;
+        border-radius: var(--radius-md);
+        padding: 10px 14px;
+        width: 100%;
+        outline: none;
+        transition: border-color 0.2s;
+    }
 
-        input[type="number"],
-        input[type="text"] {
-            background-color: #0f3460;
-            border: 1px solid #1e4d8c;
-            color: #e0e0e0;
-            border-radius: 6px;
-            padding: 8px 12px;
-            width: 100%;
-            outline: none;
-        }
+    .trading-input:focus {
+        border-color: #FEE500;
+    }
 
-        input[type="number"]:focus,
-        input[type="text"]:focus {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
-        }
+    #chart-container {
+        width: 100%;
+        height: 400px;
+    }
 
-        #search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 0 0 8px 8px;
-            z-index: 100;
-            max-height: 200px;
-            overflow-y: auto;
-        }
+    .interval-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #8B95A1;
+        background: #2C2C2C;
+        transition: all 0.2s;
+    }
 
-        .search-result-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: background 0.1s;
-        }
+    .interval-btn.active, .interval-btn:hover {
+        background: #FEE500;
+        color: #191919;
+    }
+</style>
+{% endblock %}
 
-        .search-result-item:hover {
-            background: #0f3460;
-        }
-
-        #chart-container {
-            width: 100%;
-            height: 340px;
-        }
-
-        .interval-btn {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            border: 1px solid #0f3460;
-            color: #a0aec0;
-            transition: all 0.15s;
-        }
-
-        .interval-btn.active,
-        .interval-btn:hover {
-            background: #ef4444;
-            color: white;
-            border-color: #ef4444;
-        }
-
-        .price-protect-notice {
-            display: none;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.5);
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            color: #fca5a5;
-            margin-top: 6px;
-        }
-    </style>
-</head>
-
-<body class="min-h-screen">
-
-    <!-- 상단 네비게이션 -->
-    <header class="bg-gray-900 border-b border-gray-700 shadow-lg">
-        <nav class="max-w-screen-2xl mx-auto px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-6">
-                <a href="/" class="text-xl font-bold text-white tracking-tight">StockLab</a>
-                <span class="text-gray-500">|</span>
-                <span id="nav-stock-name" class="text-white font-semibold text-lg">삼성전자</span>
-                <span id="nav-ticker" class="text-gray-400 text-sm">005930</span>
+{% block content %}
+<div class="trading-body">
+    <!-- 종목 헤더 -->
+    <div class="px-8 py-6 border-b border-[#333333] flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+            <div>
+                <h1 id="stock-name-header" class="text-2xl font-bold tracking-tight">삼성전자</h1>
+                <p id="ticker-code-header" class="text-sm text-[#8B95A1] mt-1">KRX: 005930</p>
             </div>
-
-            <!-- 종목 검색 바 -->
-            <div class="relative w-72">
-                <input type="text" id="stock-search" placeholder="🔍 종목명 또는 코드 검색..."
-                    class="w-full px-4 py-2 text-sm rounded-lg" autocomplete="off">
-                <div id="search-results" class="hidden"></div>
+            <!-- 검색바 통합 -->
+            <div class="relative w-64 ml-4">
+                <input type="text" id="stock-search" placeholder="종목 검색..."
+                    class="trading-input py-2 text-sm" autocomplete="off">
+                <div id="search-results" class="hidden absolute top-full left-0 right-0 mt-2 bg-[#222222] border border-[#333333] rounded-xl z-50 shadow-2xl max-h-60 overflow-y-auto"></div>
             </div>
+        </div>
+        <div class="text-right">
+            <p id="current-price-display" class="text-4xl font-black price-up">75,000</p>
+            <p id="change-display" class="text-base font-bold price-up mt-1">▲ +900 (+1.21%)</p>
+        </div>
+    </div>
 
-            <div class="flex items-center space-x-4">
-                <a href="/" class="text-gray-400 hover:text-white text-sm transition-colors">← 대시보드</a>
-                <span id="nav-current-price" class="text-2xl font-bold price-up">75,000</span>
-                <span id="nav-change-rate" class="text-sm price-up font-medium">▲ +1.2%</span>
-            </div>
-        </nav>
-    </header>
-
-    <!-- 메인 컨텐츠 -->
-    <div class="max-w-screen-2xl mx-auto px-6 py-5 grid grid-cols-12 gap-5">
-
-        <!-- 왼쪽: 차트 + 종목 정보 (8 cols) -->
-        <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
-
-            <!-- 종목 헤더 정보 -->
-            <div class="card p-4 flex items-center justify-between">
-                <div>
-                    <h1 id="stock-name-header" class="text-xl font-bold text-white">삼성전자</h1>
-                    <p id="ticker-code-header" class="text-xs text-gray-400 mt-0.5">KRX: 005930</p>
-                </div>
-                <div class="text-right">
-                    <p id="current-price-display" class="text-3xl font-extrabold price-up">75,000</p>
-                    <p id="change-display" class="text-sm price-up mt-0.5">▲ +900원 (+1.21%)</p>
-                </div>
-                <div class="grid grid-cols-3 gap-4 text-center text-sm">
-                    <div>
-                        <p class="text-gray-500 text-xs">시가</p>
-                        <p id="open-price" class="text-white font-medium">74,100</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">고가</p>
-                        <p id="high-price" class="price-up font-medium">75,800</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">저가</p>
-                        <p id="low-price" class="price-down font-medium">73,900</p>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-xs">거래량</p>
-                    <p id="volume-display" class="text-white font-medium">12,840,300</p>
-                </div>
-            </div>
-
-            <!-- 캔들 차트 -->
-            <div class="card p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold text-gray-300">실시간 차트</h2>
+    <!-- 메인 레이아웃 -->
+    <div class="p-6 grid grid-cols-12 gap-6">
+        <!-- 왼쪽: 차트 -->
+        <div class="col-span-12 lg:col-span-8 space-y-6">
+            <div class="trading-card p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold">실시간 차트</h2>
                     <div class="flex space-x-2">
                         <button class="interval-btn active" onclick="setInterval_('1m')">1분</button>
                         <button class="interval-btn" onclick="setInterval_('5m')">5분</button>
@@ -212,429 +131,284 @@
                 </div>
                 <div id="chart-container"></div>
             </div>
+
+            <!-- 하단 정보 그리드 -->
+            <div class="grid grid-cols-4 gap-6">
+                <div class="trading-card p-4 text-center">
+                    <p class="text-xs text-[#8B95A1] mb-1">시가</p>
+                    <p id="open-price" class="font-bold">74,100</p>
+                </div>
+                <div class="trading-card p-4 text-center">
+                    <p class="text-xs text-[#8B95A1] mb-1">고가</p>
+                    <p id="high-price" class="font-bold price-up">75,800</p>
+                </div>
+                <div class="trading-card p-4 text-center">
+                    <p class="text-xs text-[#8B95A1] mb-1">저가</p>
+                    <p id="low-price" class="font-bold price-down">73,900</p>
+                </div>
+                <div class="trading-card p-4 text-center">
+                    <p class="text-xs text-[#8B95A1] mb-1">거래량</p>
+                    <p id="volume-display" class="font-bold">12,840,300</p>
+                </div>
+            </div>
         </div>
 
-        <!-- 오른쪽: 호가창 + 주문 폼 (4 cols) -->
-        <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
-
+        <!-- 오른쪽: 호가 및 주문 -->
+        <div class="col-span-12 lg:col-span-4 space-y-6">
             <!-- 호가창 -->
-            <div class="card p-4">
-                <h2 class="text-sm font-semibold text-gray-300 mb-3">호가창</h2>
-                <div id="orderbook" class="text-xs space-y-0.5">
+            <div class="trading-card p-6">
+                <h2 class="text-lg font-bold mb-4">호가</h2>
+                <div id="orderbook" class="text-sm space-y-1">
                     <!-- JS로 동적 생성 -->
                 </div>
             </div>
 
-            <!-- 주문 폼 -->
-            <div class="card p-4">
-                <!-- 매수/매도 탭 -->
-                <div class="flex rounded-lg overflow-hidden border border-gray-700 mb-4">
-                    <button id="tab-buy" class="tab-btn active flex-1 py-2 text-sm font-bold transition-all"
+            <!-- 주문 섹션 -->
+            <div class="trading-card p-6">
+                <div class="flex bg-[#2C2C2C] rounded-xl overflow-hidden mb-6">
+                    <button id="tab-buy" class="tab-btn active flex-1 py-3 text-sm font-bold transition-all"
                         onclick="switchTab('buy')">매수</button>
                     <button id="tab-sell"
-                        class="tab-btn-sell flex-1 py-2 text-sm font-bold text-gray-400 transition-all"
+                        class="tab-btn-sell flex-1 py-3 text-sm font-bold text-[#8B95A1] transition-all"
                         onclick="switchTab('sell')">매도</button>
                 </div>
 
-                <div class="space-y-3">
-                    <!-- 주문 구분 -->
+                <div class="space-y-5">
                     <div>
-                        <label class="text-xs text-gray-500 block mb-1">주문 구분</label>
-                        <select id="order-type" class="w-full rounded-lg px-3 py-2 text-sm"
-                            style="background:#0f3460;border:1px solid #1e4d8c;color:#e0e0e0;">
+                        <label class="text-xs text-[#8B95A1] block mb-2 px-1">주문 구분</label>
+                        <select id="order-type" class="trading-input">
                             <option value="limit">지정가</option>
                             <option value="market">시장가</option>
                         </select>
                     </div>
 
-                    <!-- 주문 가격 -->
                     <div id="price-field">
-                        <label class="text-xs text-gray-500 block mb-1">주문 가격 (원)</label>
-                        <input type="number" id="order-price" placeholder="0" value="75000" min="0" step="100">
-                        <div id="price-protect-notice" class="price-protect-notice">
-                            ⚠️ 현재가 보호: 시장가로 즉시 체결됩니다.
-                        </div>
+                        <label class="text-xs text-[#8B95A1] block mb-2 px-1">가격 (KRW)</label>
+                        <input type="number" id="order-price" class="trading-input text-lg font-bold" value="75000">
                     </div>
 
-                    <!-- 주문 수량 -->
                     <div>
-                        <label class="text-xs text-gray-500 block mb-1">주문 수량 (주)</label>
-                        <div class="flex items-center space-x-2">
-                            <button onclick="changeQty(-1)"
-                                class="px-3 py-2 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors">－</button>
-                            <input type="number" id="order-qty" value="1" min="1" class="text-center">
-                            <button onclick="changeQty(1)"
-                                class="px-3 py-2 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors">＋</button>
+                        <label class="text-xs text-[#8B95A1] block mb-2 px-1">수량 (JU)</label>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="changeQty(-1)" class="w-12 h-12 bg-[#2C2C2C] rounded-xl flex items-center justify-center hover:bg-[#3A3A3A]">－</button>
+                            <input type="number" id="order-qty" value="1" min="1" class="trading-input text-center text-lg font-bold">
+                            <button onclick="changeQty(1)" class="w-12 h-12 bg-[#2C2C2C] rounded-xl flex items-center justify-center hover:bg-[#3A3A3A]">＋</button>
                         </div>
                     </div>
 
-                    <!-- 예상 체결금액 -->
-                    <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
-                        <span class="text-xs text-gray-400">예상 체결금액</span>
-                        <span id="total-amount" class="text-white font-bold">75,000 원</span>
-                    </div>
-
-                    <!-- 주문 버튼 -->
-                    <button id="order-btn" onclick="placeOrder()"
-                        class="btn-buy w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-lg hover:shadow-xl hover:scale-[1.01]">
+                    <div class="bg-[#2C2C2C] rounded-xl p-4 flex justify-between items-center mt-6">
+                              <button id="order-btn" onclick="placeOrder()"
+                        class="kakao-btn-buy w-full h-16 rounded-2xl text-lg mt-2">
                         매수 주문
                     </button>
                 </div>
             </div>
-
-            <!-- 알림 영역 -->
-            <div id="order-alert" class="hidden card p-3 text-sm text-center"></div>
         </div>
     </div>
+</div>
 
-    <script>
-        // ─── 전역 상태 ────────────────────────────────────────────────
-        let currentTicker = '005930';
-        let currentStockName = '삼성전자';
-        let currentPrice = 75000;
-        let currentTab = 'buy';
-        let currentInterval = '1m';
-        let chart, candleSeries;
-        let chartUpdateTimer = null;
+<script>
+    // ─── 전역 상태 ────────────────────────────────────────────────
+    let currentTicker = '005930';
+    let currentStockName = '삼성전자';
+    let currentPrice = 75000;
+    let currentTab = 'buy';
+    let currentInterval = '1m';
+    let chart, candleSeries;
+    let chartUpdateTimer = null;
 
-        // ─── 종목 데이터 (Mock) ────────────────────────────────────────
-        const STOCKS = {
-            '005930': { name: '삼성전자', price: 75000, change: +900, rate: +1.21 },
-            '000660': { name: 'SK하이닉스', price: 185000, change: -2000, rate: -1.07 },
-            '035420': { name: 'NAVER', price: 210000, change: +3000, rate: +1.45 },
-            '051910': { name: 'LG화학', price: 385000, change: -5000, rate: -1.28 },
-            '006400': { name: '삼성SDI', price: 420000, change: +8000, rate: +1.94 },
-            '035720': { name: '카카오', price: 47500, change: +500, rate: +1.06 },
-            '373220': { name: 'LG에너지솔루션', price: 398000, change: -3000, rate: -0.75 },
-            '005490': { name: 'POSCO홀딩스', price: 382000, change: +7000, rate: +1.87 },
-            '105560': { name: 'KB금융', price: 67500, change: +800, rate: +1.20 },
-            '012330': { name: '현대모비스', price: 258000, change: -2000, rate: -0.77 },
-        };
+    const STOCKS = {
+        '005930': { name: '삼성전자', price: 75000, change: +900, rate: +1.21 },
+        '000660': { name: 'SK하이닉스', price: 185000, change: -2000, rate: -1.07 },
+        '035420': { name: 'NAVER', price: 210000, change: +3000, rate: +1.45 },
+        '051910': { name: 'LG화학', price: 385000, change: -5000, rate: -1.28 },
+        '035720': { name: '카카오', price: 47500, change: +500, rate: +1.06 },
+        '005380': { name: '현대차', price: 245000, change: +1500, rate: +0.61 },
+    };
 
-        // ─── 차트 초기화 ──────────────────────────────────────────────
-        function initChart() {
-            const container = document.getElementById('chart-container');
-            chart = LightweightCharts.createChart(container, {
-                width: container.clientWidth,
-                height: 340,
-                layout: { background: { color: '#16213e' }, textColor: '#a0aec0' },
-                grid: { vertLines: { color: '#0f3460' }, horzLines: { color: '#0f3460' } },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: '#0f3460' },
-                timeScale: { borderColor: '#0f3460', timeVisible: true, secondsVisible: false },
+    function initChart() {
+        const container = document.getElementById('chart-container');
+        if (!container) return;
+        
+        chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: 400,
+            layout: { background: { color: '#222222' }, textColor: '#8B95A1' },
+            grid: { vertLines: { color: '#333333' }, horzLines: { color: '#333333' } },
+            rightPriceScale: { borderColor: '#333333' },
+            timeScale: { borderColor: '#333333', timeVisible: true },
+        });
+
+        candleSeries = chart.addCandlestickSeries({
+            upColor: '#F04452',
+            downColor: '#3182F6',
+            borderUpColor: '#F04452',
+            borderDownColor: '#3182F6',
+            wickUpColor: '#F04452',
+            wickDownColor: '#3182F6',
+        });
+
+        loadChartData();
+        window.addEventListener('resize', () => chart.applyOptions({ width: container.clientWidth }));
+    }
+
+    function loadChartData() {
+        if (chartUpdateTimer) clearInterval(chartUpdateTimer);
+        const data = generateCandleData(currentPrice, 100, currentInterval === '1d' ? 1440 : 1);
+        candleSeries.setData(data);
+        chart.timeScale().fitContent();
+    }
+
+    function generateCandleData(basePrice, count, minutes) {
+        const data = [];
+        let time = Math.floor(Date.now() / 1000) - count * minutes * 60;
+        let price = basePrice;
+        for (let i = 0; i < count; i++) {
+            const open = price;
+            const close = price * (1 + (Math.random() - 0.5) * 0.01);
+            data.push({
+                time: time,
+                open: Math.round(open),
+                high: Math.round(Math.max(open, close) * 1.002),
+                low: Math.round(Math.min(open, close) * 0.998),
+                close: Math.round(close)
             });
-
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#ef4444',
-                downColor: '#3b82f6',
-                borderUpColor: '#ef4444',
-                borderDownColor: '#3b82f6',
-                wickUpColor: '#ef4444',
-                wickDownColor: '#3b82f6',
-            });
-
-            loadChartData();
-
-            window.addEventListener('resize', () => {
-                chart.applyOptions({ width: container.clientWidth });
-            });
+            price = close;
+            time += minutes * 60;
         }
+        return data;
+    }
 
-        function generateCandleData(basePrice, count, intervalMinutes) {
-            const data = [];
-            let price = basePrice * (0.95 + Math.random() * 0.05);
-            const now = Math.floor(Date.now() / 1000);
-            const step = intervalMinutes * 60;
-
-            for (let i = count; i >= 0; i--) {
-                const time = now - i * step;
-                const open = price;
-                const change = (Math.random() - 0.48) * basePrice * 0.015;
-                const close = Math.max(open + change, basePrice * 0.5);
-                const high = Math.max(open, close) + Math.random() * basePrice * 0.005;
-                const low = Math.min(open, close) - Math.random() * basePrice * 0.005;
-                data.push({ time, open: Math.round(open), high: Math.round(high), low: Math.round(low), close: Math.round(close) });
-                price = close;
-            }
-            return data;
-        }
-
-        function loadChartData() {
-            if (chartUpdateTimer) clearInterval(chartUpdateTimer);
-
-            const intervalMap = { '1m': 1, '5m': 5, '1d': 1440 };
-            const stock = STOCKS[currentTicker] || { price: currentPrice };
-            const minutes = intervalMap[currentInterval] || 1;
-            const count = currentInterval === '1d' ? 90 : 60;
-
-            const data = generateCandleData(stock.price, count, minutes);
-            candleSeries.setData(data);
-            chart.timeScale().fitContent();
-
-            // 5초마다 실시간 업데이트
-            chartUpdateTimer = setInterval(() => {
-                const lastBar = data[data.length - 1];
-                const newClose = Math.round(lastBar.close * (1 + (Math.random() - 0.49) * 0.003));
-                const newHigh = Math.max(lastBar.high, newClose);
-                const newLow = Math.min(lastBar.low, newClose);
-                const updated = { ...lastBar, close: newClose, high: newHigh, low: newLow };
-                data[data.length - 1] = updated;
-                candleSeries.update(updated);
-                updateCurrentPrice(newClose);
-            }, 5000);
-        }
-
-        function setInterval_(iv) {
-            currentInterval = iv;
-            document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            loadChartData();
-        }
-
-        // ─── 현재가 업데이트 ──────────────────────────────────────────
-        function updateCurrentPrice(price) {
-            const prev = currentPrice;
-            currentPrice = price;
-            const change = price - (STOCKS[currentTicker]?.price || price);
-            const rate = ((change / (STOCKS[currentTicker]?.price || price)) * 100).toFixed(2);
-            const direction = change >= 0 ? '▲' : '▼';
-            const cls = change >= 0 ? 'price-up' : 'price-down';
-
-            const formatted = price.toLocaleString();
-            ['nav-current-price', 'current-price-display'].forEach(id => {
-                const el = document.getElementById(id);
-                el.textContent = formatted;
-                el.className = el.className.replace(/price-(up|down)/g, '') + ' ' + cls;
-            });
-            const changeText = `${direction} ${change >= 0 ? '+' : ''}${change.toLocaleString()}원 (${change >= 0 ? '+' : ''}${rate}%)`;
-            ['nav-change-rate', 'change-display'].forEach(id => {
-                const el = document.getElementById(id);
-                el.textContent = change >= 0 ? `▲ +${rate}%` : `▼ ${rate}%`;
-                el.className = el.className.replace(/price-(up|down)/g, '') + ' ' + cls;
-            });
-            document.getElementById('change-display').textContent = changeText;
-
-            checkPriceProtection();
-            updateTotalAmount();
-            renderOrderBook();
-        }
-
-        // ─── 호가창 렌더링 ────────────────────────────────────────────
-        function renderOrderBook() {
-            const ob = document.getElementById('orderbook');
-            const spread = currentPrice * 0.003;
-            let html = '';
-
-            // 매도 호가 (위 5단계)
-            for (let i = 5; i >= 1; i--) {
-                const price = Math.round((currentPrice + spread * i) / 100) * 100;
-                const qty = Math.floor(Math.random() * 8000 + 500);
-                const barW = Math.min(qty / 100, 80);
-                html += `<div class="orderbook-row flex items-center justify-between py-0.5 px-1 rounded">
-                <span class="text-blue-400 font-medium w-24 text-right">${price.toLocaleString()}</span>
-                <div class="flex-1 mx-2 h-4 rounded-sm overflow-hidden" style="background:rgba(59,130,246,0.1)">
-                    <div style="width:${barW}%;height:100%;background:rgba(59,130,246,0.35);float:right;"></div>
-                </div>
-                <span class="text-gray-400 w-16 text-right">${qty.toLocaleString()}</span>
+    function renderOrderBook() {
+        const ob = document.getElementById('orderbook');
+        if (!ob) return;
+        
+        let html = '';
+        for (let i = 5; i >= 1; i--) {
+            const price = currentPrice + (i * 100);
+            html += `<div class="orderbook-row flex justify-between py-1 px-4 rounded cursor-pointer" onclick="setOrderPrice(${price})">
+                <span class="price-up font-bold">${price.toLocaleString()}</span>
+                <span class="text-[#8B95A1] text-xs">${Math.floor(Math.random()*1000)}</span>
             </div>`;
-            }
-
-            // 현재가 구분선
-            html += `<div class="my-1 py-1 px-1 bg-gray-800 rounded flex justify-between items-center">
-            <span class="text-xs text-gray-400">현재가</span>
-            <span class="font-bold text-white">${currentPrice.toLocaleString()}</span>
-            <span class="text-xs text-gray-400">체결</span>
+        }
+        html += `<div class="bg-[#2C2C2C] py-2 px-4 rounded-xl flex justify-between my-2">
+            <span class="text-xs font-bold">현재가</span>
+            <span class="font-black text-[#FEE500]">${currentPrice.toLocaleString()}</span>
         </div>`;
-
-            // 매수 호가 (아래 5단계)
-            for (let i = 1; i <= 5; i++) {
-                const price = Math.round((currentPrice - spread * i) / 100) * 100;
-                const qty = Math.floor(Math.random() * 8000 + 500);
-                const barW = Math.min(qty / 100, 80);
-                html += `<div class="orderbook-row flex items-center justify-between py-0.5 px-1 rounded cursor-pointer" onclick="setOrderPrice(${price})">
-                <span class="text-red-400 font-medium w-24 text-right">${price.toLocaleString()}</span>
-                <div class="flex-1 mx-2 h-4 rounded-sm overflow-hidden" style="background:rgba(239,68,68,0.1)">
-                    <div style="width:${barW}%;height:100%;background:rgba(239,68,68,0.35);"></div>
-                </div>
-                <span class="text-gray-400 w-16 text-right">${qty.toLocaleString()}</span>
+        for (let i = 1; i <= 5; i++) {
+            const price = currentPrice - (i * 100);
+            html += `<div class="orderbook-row flex justify-between py-1 px-4 rounded cursor-pointer" onclick="setOrderPrice(${price})">
+                <span class="price-down font-bold">${price.toLocaleString()}</span>
+                <span class="text-[#8B95A1] text-xs">${Math.floor(Math.random()*1000)}</span>
             </div>`;
+        }
+        ob.innerHTML = html;
+    }
+
+    function setOrderPrice(price) {
+        document.getElementById('order-price').value = price;
+        updateTotalAmount();
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        const btn = document.getElementById('order-btn');
+        if (tab === 'buy') {
+            document.getElementById('tab-buy').classList.add('active');
+            document.getElementById('tab-sell').classList.remove('active');
+            btn.className = 'kakao-btn-buy w-full h-16 rounded-2xl text-lg mt-2';
+            btn.textContent = '매수 주문';
+            document.getElementById('total-amount').className = 'text-xl font-black text-[#FEE500]';
+        } else {
+            document.getElementById('tab-sell').classList.add('active');
+            document.getElementById('tab-buy').classList.remove('active');
+            btn.className = 'btn-sell-modern w-full h-16 rounded-2xl text-lg mt-2';
+            btn.textContent = '매도 주문';
+            document.getElementById('total-amount').className = 'text-xl font-black text-white';
+        }
+    }
+
+    function changeQty(delta) {
+        const input = document.getElementById('order-qty');
+        input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+        updateTotalAmount();
+    }
+
+    function updateTotalAmount() {
+        const price = parseInt(document.getElementById('order-price').value) || 0;
+        const qty = parseInt(document.getElementById('order-qty').value) || 0;
+        document.getElementById('total-amount').textContent = (price * qty).toLocaleString() + ' 원';
+    }
+
+    async function placeOrder() {
+        showToast(`${currentTab === 'buy' ? '매수' : '매도'} 주문이 접수되었습니다.`, 'success');
+    }
+
+    function setInterval_(interval) {
+        currentInterval = interval;
+        document.querySelectorAll('.interval-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.textContent.includes(interval === '1m' ? '1분' : interval === '5m' ? '5분' : '일봉')) {
+                btn.classList.add('active');
             }
+        });
+        loadChartData();
+    }
 
-            ob.innerHTML = html;
-        }
+    function switchStock(ticker) {
+        const stock = STOCKS[ticker];
+        if (!stock) return;
+        currentTicker = ticker;
+        currentStockName = stock.name;
+        currentPrice = stock.price;
+        document.getElementById('stock-name-header').textContent = stock.name;
+        document.getElementById('ticker-code-header').textContent = `KRX: ${ticker}`;
+        document.getElementById('order-price').value = stock.price;
+        document.getElementById('stock-search').value = '';
+        document.getElementById('search-results').classList.add('hidden');
+        showToast(`${stock.name} 종목으로 전환되었습니다.`, 'info');
+        loadChartData();
+        renderOrderBook();
+        updateTotalAmount();
+    }
 
-        function setOrderPrice(price) {
-            document.getElementById('order-price').value = price;
-            checkPriceProtection();
-            updateTotalAmount();
-        }
-
-        // ─── 가격 보호 로직 ───────────────────────────────────────────
-        function checkPriceProtection() {
-            const orderPrice = parseInt(document.getElementById('order-price').value) || 0;
-            const notice = document.getElementById('price-protect-notice');
-            const isBuy = currentTab === 'buy';
-
-            // 매수 시 주문가 > 현재가, 매도 시 주문가 < 현재가
-            const triggered = (isBuy && orderPrice > currentPrice) || (!isBuy && orderPrice < currentPrice && orderPrice > 0);
-            notice.style.display = triggered ? 'block' : 'none';
-            if (triggered) {
-                notice.textContent = `⚠️ 가격 보호: ${isBuy ? '현재가보다 비싸게 매수' : '현재가보다 싸게 매도'} → 시장가(${currentPrice.toLocaleString()}원)로 즉시 체결`;
-            }
-        }
-
-        // ─── 주문 탭 전환 ─────────────────────────────────────────────
-        function switchTab(tab) {
-            currentTab = tab;
-            const buyTab = document.getElementById('tab-buy');
-            const sellTab = document.getElementById('tab-sell');
-            const btn = document.getElementById('order-btn');
-
-            if (tab === 'buy') {
-                buyTab.classList.add('active');
-                sellTab.classList.remove('active');
-                btn.className = btn.className.replace('btn-sell', 'btn-buy');
-                btn.textContent = '매수 주문';
-            } else {
-                sellTab.classList.add('active');
-                buyTab.classList.remove('active');
-                btn.className = btn.className.replace('btn-buy', 'btn-sell');
-                btn.textContent = '매도 주문';
-            }
-            checkPriceProtection();
-        }
-
-        // ─── 수량 변경 ────────────────────────────────────────────────
-        function changeQty(delta) {
-            const input = document.getElementById('order-qty');
-            input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
-            updateTotalAmount();
-        }
-
-        function updateTotalAmount() {
-            const price = parseInt(document.getElementById('order-price').value) || 0;
-            const qty = parseInt(document.getElementById('order-qty').value) || 0;
-            const effectivePrice = document.getElementById('price-protect-notice').style.display !== 'none' ? currentPrice : price;
-            document.getElementById('total-amount').textContent = (effectivePrice * qty).toLocaleString() + ' 원';
-        }
-
-        // ─── 주문 실행 ────────────────────────────────────────────────
-        async function placeOrder() {
-            const rawPrice = parseInt(document.getElementById('order-price').value) || currentPrice;
-            const qty = parseInt(document.getElementById('order-qty').value) || 1;
-            const orderType = document.getElementById('order-type').value;
-            const isBuy = currentTab === 'buy';
-
-            // 가격 보호 적용
-            const needsProtection = (isBuy && rawPrice > currentPrice) || (!isBuy && rawPrice < currentPrice);
-            const execPrice = (orderType === 'market' || needsProtection) ? currentPrice : rawPrice;
-
-            const payload = {
-                ticker_code: currentTicker,
-                order_type: currentTab.toUpperCase(),
-                price: execPrice,
-                quantity: qty,
-                is_market: orderType === 'market' || needsProtection
-            };
-
-            const alertEl = document.getElementById('order-alert');
-            alertEl.className = 'card p-3 text-sm text-center';
-            alertEl.style.display = 'block';
-
-            try {
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-
-                if (res.ok) {
-                    const protectMsg = needsProtection ? ' (가격 보호 적용)' : '';
-                    alertEl.textContent = `✅ ${isBuy ? '매수' : '매도'} 주문 성공! ${qty}주 × ${execPrice.toLocaleString()}원${protectMsg}`;
-                    alertEl.style.background = 'rgba(34,197,94,0.15)';
-                    alertEl.style.borderColor = 'rgba(34,197,94,0.4)';
-                    alertEl.style.color = '#86efac';
-                } else {
-                    throw new Error(data.message || '주문 실패');
-                }
-            } catch (e) {
-                alertEl.textContent = `❌ 주문 오류: ${e.message}`;
-                alertEl.style.background = 'rgba(239,68,68,0.15)';
-                alertEl.style.borderColor = 'rgba(239,68,68,0.4)';
-                alertEl.style.color = '#fca5a5';
-            }
-
-            setTimeout(() => { alertEl.style.display = 'none'; }, 5000);
-        }
-
-        // ─── 종목 검색 ────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+        initChart();
+        renderOrderBook();
+        updateTotalAmount();
+        
         const searchInput = document.getElementById('stock-search');
         const searchResults = document.getElementById('search-results');
-
-        searchInput.addEventListener('input', function () {
-            const q = this.value.trim().toLowerCase();
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.trim().toLowerCase();
             if (!q) { searchResults.classList.add('hidden'); return; }
-
-            const matches = Object.entries(STOCKS).filter(([code, s]) =>
-                s.name.toLowerCase().includes(q) || code.includes(q)
-            );
-
-            if (matches.length === 0) {
-                searchResults.innerHTML = '<div class="search-result-item text-gray-500">검색 결과 없음</div>';
-            } else {
-                searchResults.innerHTML = matches.map(([code, s]) => {
-                    const cls = s.rate >= 0 ? 'text-red-400' : 'text-blue-400';
-                    const arrow = s.rate >= 0 ? '▲' : '▼';
-                    return `<div class="search-result-item flex justify-between" onclick="switchStock('${code}')">
-                    <span class="text-white">${s.name} <span class="text-gray-500 text-xs">${code}</span></span>
-                    <span class="${cls} text-xs">${arrow} ${Math.abs(s.rate).toFixed(2)}%</span>
-                </div>`;
-                }).join('');
-            }
+            const matches = Object.entries(STOCKS).filter(([c, s]) => s.name.includes(q) || c.includes(q));
+            searchResults.innerHTML = matches.map(([c, s]) => `
+                <div class="p-4 hover:bg-[#333333] cursor-pointer flex justify-between" onclick="switchStock('${c}')">
+                    <span class="font-bold">${s.name}</span>
+                    <span class="text-xs text-[#8B95A1]">${c}</span>
+                </div>
+            `).join('');
             searchResults.classList.remove('hidden');
         });
 
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden');
-            }
-        });
+        setInterval(renderOrderBook, 10000);
+        const urlParams = new URLSearchParams(window.location.search);
+        const tickerParam = urlParams.get('ticker');
+        if (tickerParam && STOCKS[tickerParam]) switchStock(tickerParam);
+    });
 
-        function switchStock(ticker) {
-            currentTicker = ticker;
-            const stock = STOCKS[ticker];
-            if (!stock) return;
-
-            currentStockName = stock.name;
-            currentPrice = stock.price;
-
-            // UI 업데이트
-            document.getElementById('nav-stock-name').textContent = stock.name;
-            document.getElementById('nav-ticker').textContent = ticker;
-            document.getElementById('stock-name-header').textContent = stock.name;
-            document.getElementById('ticker-code-header').textContent = `KRX: ${ticker}`;
-            document.getElementById('order-price').value = stock.price;
-
-            searchInput.value = '';
-            searchResults.classList.add('hidden');
-
-            updateCurrentPrice(stock.price);
-            loadChartData();
-        }
-
-        // ─── 이벤트 바인딩 ────────────────────────────────────────────
-        document.getElementById('order-price').addEventListener('input', () => {
-            checkPriceProtection();
-            updateTotalAmount();
-        });
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('order-price').addEventListener('input', updateTotalAmount);
         document.getElementById('order-qty').addEventListener('input', updateTotalAmount);
-        document.getElementById('order-type').addEventListener('change', function () {
+        document.getElementById('order-type').addEventListener('change', function() {
             document.getElementById('price-field').style.display = this.value === 'market' ? 'none' : 'block';
             updateTotalAmount();
         });
-
-        // ─── 초기화 ───────────────────────────────────────────────────
+    });
+</script>
+{% endblock %}
+��──────────────────────────────
         window.addEventListener('load', () => {
             initChart();
             renderOrderBook();

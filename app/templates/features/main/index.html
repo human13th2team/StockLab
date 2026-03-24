@@ -4,45 +4,50 @@
 
 {% block styles %}
 <style>
-    .asset-card {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
+    /* 로컬 스타일 제거 - theme.css의 asset-card-premium 사용 */
 </style>
 {% endblock %}
 
 {% block content %}
-<div id="user-section" class="hidden">
-    <div class="flex flex-col md:flex-row justify-between items-end mb-10 pb-6 border-b border-slate-100">
-        <div>
-            <h2 class="text-3xl font-bold text-slate-800">👋 <span id="user-nickname" class="text-indigo-600">대표님</span>, 로그인을 환영합니다!</h2>
-            <p class="text-slate-500 mt-1">계정 관리와 초기 자산을 확인해 보세요.</p>
+<div class="premium-card mb-8">
+    <div id="user-section" class="opacity-0 transition-opacity duration-500">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-10 pb-6 border-b border-gray-100">
+            <div>
+                <h2 class="text-3xl font-bold text-[var(--toss-text-main)]">👋 <span id="user-nickname" class="text-tossBlue">대표님</span>, 로그인을 환영합니다!</h2>
+                <p class="text-[var(--toss-text-sub)] mt-1">계정 관리와 초기 자산을 확인해 보세요.</p>
+            </div>
+            <button onclick="logout()" class="mt-4 md:mt-0 text-[var(--toss-text-sub)] font-semibold hover:text-red-500 transition-colors">로그아웃</button>
         </div>
-        <button onclick="logout()" class="mt-4 md:mt-0 text-red-500 font-semibold hover:text-red-700 transition-colors">로그아웃</button>
-    </div>
 
     <!-- 총 자산 카드 (초기 1억 확인용) -->
-    <div class="max-w-md">
-        <div class="asset-card p-8 rounded-3xl text-white shadow-2xl overflow-hidden relative group">
-            <h3 class="text-indigo-300 font-semibold uppercase tracking-wider mb-2">Total Balance (초기 가입금)</h3>
-            <div class="flex items-baseline space-x-2">
-                <span class="text-4xl font-black">₩</span>
-                <span id="total-cash" class="text-5xl font-black tabular-nums tracking-tight">0</span>
-            </div>
-            <div class="mt-8 pt-6 border-t border-slate-700/50 flex justify-between">
-                <div>
-                    <p class="text-slate-400 text-sm">가용한 현금</p>
-                    <p id="available-cash" class="font-bold text-xl">0</p>
+    <div class="max-w-2xl">
+        <div class="asset-card-premium group">
+            <div class="relative z-10">
+                <h3 class="text-indigo-300 font-semibold uppercase tracking-wider mb-2 opacity-80">Total Balance (초기 가입금)</h3>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-4xl font-black">₩</span>
+                    <span id="total-cash" class="text-6xl font-black tabular-nums tracking-tight">0</span>
                 </div>
-                <div class="text-right">
-                    <p class="text-slate-400 text-sm">예수금</p>
-                    <p id="deposit-cash" class="font-bold text-xl">0</p>
+                
+                <div class="mt-12 pt-8 border-t border-white/10 flex flex-wrap gap-8 justify-between">
+                    <div>
+                        <p class="text-slate-400 text-sm mb-1">가용한 현금</p>
+                        <p id="available-cash" class="font-bold text-2xl">₩0</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-slate-400 text-sm mb-1">예수금</p>
+                        <p id="deposit-cash" class="font-bold text-2xl">₩0</p>
+                    </div>
                 </div>
             </div>
+            
+            <!-- 데코레이션 요소 -->
+            <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-tossBlue/20 rounded-full blur-3xl group-hover:bg-tossBlue/30 transition-colors"></div>
         </div>
         
-        <div class="mt-8 text-center">
-            <a href="{{ url_for('auth.profile_page') }}" class="inline-block px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-xl transition-all">내 정보 수정하러 가기</a>
+        <div class="mt-12 flex flex-wrap gap-4">
+            <a href="{{ url_for('trading.order_page') }}" class="btn-toss px-10 py-4 text-lg">거래하러 가기</a>
+            <a href="{{ url_for('auth.profile_page') }}" class="px-8 py-4 bg-white text-slate-600 font-bold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">내 정보 관리</a>
         </div>
     </div>
 </div>
@@ -58,7 +63,7 @@
         }
 
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/me', {
                 headers: {
                     'Authorization': 'Bearer ' + token
                 }
@@ -66,20 +71,27 @@
 
             if (response.ok) {
                 const data = await response.json();
-                document.getElementById('user-section').classList.remove('hidden');
+                const userSection = document.getElementById('user-section');
+                userSection.classList.remove('opacity-0');
+                
                 document.getElementById('user-nickname').textContent = data.nickname;
                 
                 const total = data.cash + data.deposit;
                 document.getElementById('total-cash').textContent = total.toLocaleString();
                 document.getElementById('available-cash').textContent = '₩' + data.cash.toLocaleString();
                 document.getElementById('deposit-cash').textContent = '₩' + data.deposit.toLocaleString();
+                
+                showToast(`${data.nickname} 대표님, 반갑습니다!`, 'success');
             } else {
                 localStorage.removeItem('access_token');
                 window.location.href = "{{ url_for('auth.login_page') }}";
             }
         } catch (err) {
             console.error(err);
-            window.location.href = "{{ url_for('auth.login_page') }}";
+            showToast('인증 확인 중 오류가 발생했습니다.', 'error');
+            setTimeout(() => {
+                window.location.href = "{{ url_for('auth.login_page') }}";
+            }, 2000);
         }
     }
 

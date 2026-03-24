@@ -1,51 +1,63 @@
 {% extends 'base.html' %}
 
-{% block title %}내 정보 수정 - StockLab{% endblock %}
+{% block title %}계정 관리 - StockLab{% endblock %}
 
 {% block content %}
-<div class="max-w-md mx-auto py-8">
-    <div class="text-center mb-10">
-        <h2 class="text-4xl font-extrabold text-slate-800 mb-2">계정 관리</h2>
-        <p class="text-slate-500">이메일, 닉네임, 비밀번호를 수정하거나 계정을 삭제할 수 있습니다.</p>
+<div class="premium-card max-w-2xl mx-auto my-8">
+    <div class="mb-12">
+        <h2 class="text-4xl font-extrabold text-[var(--toss-text-main)] mb-4 tracking-tight">계정 관리</h2>
+        <p class="text-[var(--toss-text-sub)] text-lg">내 정보를 확인하고 관리할 수 있습니다.</p>
     </div>
 
-    <form id="profile-form" class="space-y-6">
-        <div>
-            <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">이메일</label>
-            <input type="email" id="email" name="email" required 
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+    <form id="profile-form" class="space-y-10">
+        <div class="space-y-6">
+        <div class="space-y-6">
+            <div>
+                <label for="email" class="block text-sm font-semibold text-[var(--toss-text-sub)] mb-2 px-1">이메일 주소</label>
+                <input type="email" id="email" name="email" required 
+                    class="input-toss">
+            </div>
+
+            <div>
+                <label for="nickname" class="block text-sm font-semibold text-[var(--toss-text-sub)] mb-2 px-1">닉네임</label>
+                <input type="text" id="nickname" name="nickname" required 
+                    class="input-toss">
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-semibold text-[var(--toss-text-sub)] mb-2 px-1">새 비밀번호</label>
+                <input type="password" id="password" name="password" 
+                    class="input-toss"
+                    placeholder="변경 시에만 입력해 주세요">
+            </div>
+        </div>
         </div>
 
-        <div>
-            <label for="nickname" class="block text-sm font-semibold text-slate-700 mb-1">닉네임</label>
-            <input type="text" id="nickname" name="nickname" required 
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
-        </div>
-
-        <div>
-            <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">새 비밀번호 (변경 시에만 입력)</label>
-            <input type="password" id="password" name="password" 
-                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                placeholder="비워두면 기존 비밀번호 유지">
-        </div>
-
-        <button type="submit" 
-            class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1">
-            변경 사항 저장하기
-        </button>
-
-        <div class="pt-10 mt-10 border-t border-slate-100">
-            <h3 class="text-lg font-bold text-red-600 mb-2">위험 구역</h3>
-            <p class="text-sm text-slate-500 mb-4">계정을 삭제하면 모든 투자 데이터와 자산 정보가 영구적으로 삭제되며 복구할 수 없습니다.</p>
-            <button type="button" onclick="deleteAccount()" 
-                class="w-full py-3 bg-white border-2 border-red-100 text-red-600 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 transition-all">
-                계정 영구 삭제 (회원 탈퇴)
+        <div class="pt-4">
+            <button type="submit" class="w-full btn-toss h-14 text-lg">
+                변경 사항 저장
             </button>
         </div>
 
-        <a href="{{ url_for('main.index') }}" class="block text-center text-sm text-slate-500 mt-6 hover:underline">
-            취소하고 돌아가기
-        </a>
+        <div class="pt-16 mt-16 border-t border-[var(--toss-border)]">
+            <h3 class="text-xl font-bold text-red-500 mb-4">위험 구역</h3>
+            <div class="bg-red-50 rounded-2xl p-6 border border-red-100 mb-6">
+                <p class="text-[var(--toss-text-sub)] text-sm leading-relaxed">
+                    계정을 삭제하면 모든 투자 데이터와 자산 정보가 영구적으로 삭제되며 복구할 수 없습니다. 
+                    신중하게 결정해 주세요.
+                </p>
+            </div>
+            <button type="button" onclick="deleteAccount()" 
+                class="w-full h-14 bg-white border-2 border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition-all">
+                회원 탈퇴하기
+            </button>
+        </div>
+
+        <div class="text-center">
+            <a href="{{ url_for('main.index') }}" class="text-[#4E5968] font-medium hover:text-[#191F28] transition-colors">
+                메인으로 돌아가기
+            </a>
+        </div>
     </form>
 </div>
 {% endblock %}
@@ -57,10 +69,9 @@
         window.location.href = "{{ url_for('auth.login_page') }}";
     }
 
-    // 초기 정보 불러오기
     async function loadProfile() {
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/me', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await response.json();
@@ -68,7 +79,6 @@
                 document.getElementById('email').value = data.email;
                 document.getElementById('nickname').value = data.nickname;
             } else {
-                alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해 주세요.');
                 logout();
             }
         } catch (err) {
@@ -76,7 +86,6 @@
         }
     }
 
-    // 정보 수정 제출
     document.getElementById('profile-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -88,7 +97,7 @@
         if (password) body.password = password;
         
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/me', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -100,26 +109,25 @@
             const data = await response.json();
             
             if (response.ok) {
-                alert('계정 정보가 성공적으로 수정되었습니다!');
-                localStorage.setItem('user_nickname', data.user.nickname); // 닉네임 갱신
-                window.location.reload();
+                showToast('변경 사항이 저장되었습니다.', 'success');
+                localStorage.setItem('user_nickname', data.user.nickname);
+                setTimeout(() => window.location.reload(), 1000);
             } else {
-                alert('수정 실패: ' + data.msg);
+                showToast('저장 실패: ' + data.msg, 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('연결 오류가 발생했습니다.');
+            showToast('오류가 발생했습니다.', 'error');
         }
     });
 
-    // 계정 삭제 (회원 탈퇴)
     async function deleteAccount() {
-        if (!confirm('정말로 계정을 삭제하시겠습니까? 모든 데이터가 사라지며 취소할 수 없습니다.')) {
+        if (!confirm('정말로 탈퇴하시겠습니까?')) {
             return;
         }
         
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/me', {
                 method: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + token
@@ -127,14 +135,14 @@
             });
             
             if (response.ok) {
-                alert('계정이 삭제되었습니다. 그동안 이용해 주셔서 감사합니다.');
-                logout(); // 토큰 삭제 및 로그인 페이지 이동
+                showToast('탈퇴 처리가 완료되었습니다.', 'success');
+                setTimeout(() => logout(), 1000);
             } else {
-                alert('삭제 실패: 서버 오류가 발생했습니다.');
+                showToast('탈퇴 중 오류가 발생했습니다.', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('연결 오류가 발생했습니다.');
+            showToast('통신 중 오류가 발생했습니다.', 'error');
         }
     }
 

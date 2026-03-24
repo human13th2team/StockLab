@@ -2,65 +2,47 @@
 
 {% block title %}회원가입 - StockLab{% endblock %}
 
-{% block styles %}
-<style>
-    .glass-effect {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .input-field {
-        transition: all 0.3s ease;
-    }
-    .input-field:focus {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="max-w-md mx-auto py-8">
-    <div class="text-center mb-10">
-        <h2 class="text-4xl font-extrabold text-slate-800 mb-2">시작하기</h2>
-        <p class="text-slate-500">지금 가입하고 <span class="text-indigo-600 font-bold">100만 원</span>의 모의 투자금을 받으세요!</p>
+<div class="premium-card max-w-md mx-auto my-8">
+    <div class="mb-12">
+        <h2 class="text-4xl font-extrabold text-[var(--toss-text-main)] mb-4 tracking-tight">회원가입</h2>
+        <p class="text-[var(--toss-text-sub)] text-lg">지금 가입하고 <span class="text-tossBlue font-bold">100만 원</span>의 모의 투자금을 받으세요.</p>
     </div>
 
-    <form id="signup-form" class="space-y-6">
+    <form id="signup-form" class="space-y-8">
         <div>
-            <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">이메일</label>
+            <label for="email" class="block text-sm font-semibold text-[var(--toss-text-sub)] mb-2 px-1">이메일 주소</label>
             <input type="email" id="email" name="email" required 
-                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                placeholder="example@stocklab.com">
+                class="input-toss"
+                placeholder="이메일을 입력해 주세요">
         </div>
 
         <div>
-            <label for="nickname" class="block text-sm font-semibold text-slate-700 mb-1">닉네임</label>
+            <label for="nickname" class="block text-sm font-semibold text-[var(--toss-text-sub)] mb-2 px-1">닉네임</label>
             <input type="text" id="nickname" name="nickname" required 
-                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                placeholder="멋진 닉네임">
+                class="input-toss"
+                placeholder="사용하실 닉네임을 입력해 주세요">
         </div>
 
         <div>
-            <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">비밀번호</label>
+            <label for="password" class="block text-sm font-semibold text-[var(--toss-text-sub)] mb-2 px-1">비밀번호</label>
             <input type="password" id="password" name="password" required 
-                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                placeholder="••••••••">
+                class="input-toss"
+                placeholder="비밀번호를 입력해 주세요">
         </div>
 
+        <div class="pt-4">
+            <button type="submit" class="w-full btn-toss h-14 text-lg">
+                가입하기
+            </button>
+        </div>
 
-        <button type="submit" 
-            class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1 active:scale-95">
-            무료로 가입하고 100만 원 받기
-        </button>
-
-        <p class="text-center text-sm text-slate-500 mt-6">
-            이미 계정이 있으신가요? <a href="{{ url_for('auth.login_page') }}" class="text-indigo-600 font-bold hover:underline">로그인하기</a>
-        </p>
+        <div class="text-center pt-6">
+            <p class="text-[var(--toss-text-sub)]">
+                이미 계정이 있으신가요? 
+                <a href="{{ url_for('auth.login_page') }}" class="text-tossBlue font-bold hover:underline ml-2">로그인</a>
+            </p>
+        </div>
     </form>
 </div>
 {% endblock %}
@@ -75,7 +57,7 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     const password = document.getElementById('password').value;
     
     try {
-        const response = await fetch('/api/auth/signup', {
+        const response = await fetch('/signup', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -86,14 +68,16 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (response.ok) {
-            alert('회원가입 성공! 100만 원이 자동 지급되었습니다. 로그인해 주세요.');
-            window.location.href = "{{ url_for('auth.login_page') }}";
+            showToast('회원가입 성공! 로그인해 주세요.', 'success');
+            setTimeout(() => {
+                window.location.href = "{{ url_for('auth.login_page') }}";
+            }, 1500);
         } else {
-            alert('회원가입 실패: ' + data.msg);
+            showToast('회원가입 실패: ' + data.msg, 'error');
         }
     } catch (err) {
         console.error(err);
-        alert('회원가입 중 서버 오류가 발생했습니다.');
+        showToast('회원가입 중 서버 오류가 발생했습니다.', 'error');
     }
 });
 </script>
