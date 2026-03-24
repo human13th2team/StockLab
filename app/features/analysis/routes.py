@@ -1,9 +1,9 @@
 from flask import jsonify, request, render_template
 from . import analysis_bp
 
-@analysis_bp.route('/report')
+@analysis_bp.route('/report', methods=['GET'])
 def report():
-    return render_template('features/analysis/report.html')
+    return render_template('analysis/report.html')
 
 @analysis_bp.route('/portfolio', methods=['GET'])
 def get_portfolio():
