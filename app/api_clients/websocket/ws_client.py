@@ -1,5 +1,5 @@
 import dataclasses
-
+import threading
 import websocket
 import json
 
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from app.models.stock import Stock
 from app.api_clients.auth.auth_to_redis import get_approval_key_from_redis
 
-import ws_domestic_dto
+from app.api_clients.websocket import ws_domestic_dto
 from app.api_clients.redis_client import init_redis
 load_dotenv()
 redis = init_redis()
@@ -22,11 +22,29 @@ STCK_PRPR_IDX = 2
 STCK_HGPR_IDX = 8
 # STCK_LWPR: float    #주식 최저가
 STCK_LWPR_IDX = 9
+# OPRC_VRSS_PRPR_SIGN #시가대비구분(str)
+OPRC_VRSS_PRPR_SIGN_IDX = 25
+# OPRC_VRSS_PRPR      #시가 대비(num)
+OPRC_VRSS_PRPR_IDX = 26
 
-conect_key = get_approval_key_from_redis()
+def calculate_oprc_vrss_rate(current_price, sign, vrss):
+    if sign in ['1', '2']:
+        opening_price = current_price - vrss
+    elif sign in ['4', '5']:
+        opening_price = current_price + vrss
+    else:
+        return "0.00%"
+
+    if opening_price == 0: return "0.00%"
+
+    rate = (vrss / opening_price) * 100
+
+    prefix = "+" if sign in ['1', '2'] else "-"
+    return f"{prefix}{rate:.2f}%"
 
 def on_open(ws):
-    header = dataclasses.asdict(ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key))
+    conect_key = get_approval_key_from_redis()
+    header = ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key).to_dict()
     # stocks에 저장된 종목 모두 구독
     stocks = [stock.ticker_code for stock in Stock.query.all()]
     for stock in stocks:
@@ -37,7 +55,7 @@ def on_open(ws):
         }
         ws.send(json.dumps(request))
 
-    print('🙋‍♀️OPENED connection start!!')
+    print('✅ OPENED connection start!!')
 
 def on_close(ws, status_code, close_msg):
     print('🚪CLOSED close_status_code=', status_code, " close_msg=", close_msg)
@@ -54,9 +72,9 @@ def on_message(ws, msg):
         stock_code = data[MKSC_SHRN_ISCD_IDX]
         # 가장 최신값
         last_price = redis.lindex(f"price:{stock_code}", 0)
-        # high  = int(data[STCK_HGPR_IDX]) # 주식 최고가
-        # low   = int(data[STCK_LWPR_IDX]) # 주식 최저가 > redis에서 최신값으로 유지할 필요가 있으면 주석 해제
-        # 최신값이 존재하하는데 지난 가격과 동일한 경우 저장 안하기
+        high  = int(data[STCK_HGPR_IDX]) # 주식 최고가
+        low   = int(data[STCK_LWPR_IDX]) # 주식 최저가
+
         if last_price is not None and int(last_price) == price:
             print(f"{stock_code} Redis not updated (가격 동일: {price})")
         else:
@@ -69,22 +87,39 @@ def on_message(ws, msg):
             }
             redis.publish("price_updates", json.dumps(message))
 
+            oprc_vrss_rate = calculate_oprc_vrss_rate(price, data[OPRC_VRSS_PRPR_SIGN_IDX], int(data[OPRC_VRSS_PRPR_IDX]))
+            redis.set(f"oprc_vrss:{stock_code}", oprc_vrss_rate)
+            home_msg = {
+                "stock_code": stock_code,
+                "oprc_vrss_rate": oprc_vrss_rate,
+                "higher_price": high,
+                "lowest_proce": low
+            }
+            redis.publish("oprc_vrss_updates", json.dumps(home_msg))
+
+
+
     else:
-        print("📩 MESSAGE")
-        print(msg)
+        pass
+        # 메시지가 너무 많아 주석처리
+        # print("📩 MESSAGE")
+        # print(msg)
 
 def on_error(ws, error):
-    print("💥ERROR error=", error)
+    print("💥 Socket error=", error)
 
-if __name__ == "__main__":
-    url = os.getenv('IMMITATION_DOMAIN_WS')
+def run_websocket_forever(app):
+    with app.app_context():
+        url = os.getenv('IMMITATION_DOMAIN_WS')
+        ws = websocket.WebSocketApp(
+            url,
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close
+        )
+        ws.run_forever()
 
-    ws = websocket.WebSocketApp(
-        url,
-        on_open=on_open,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close
-    )
-
-    ws.run_forever()
+def start_websocket_client(app):
+    thread = threading.Thread(target=run_websocket_forever, args=(app,), daemon=True)
+    thread.start()

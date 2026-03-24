@@ -448,6 +448,31 @@
             border-radius: 50%;
             background-color: #dc2626;
         }
+        /* 토큰 갱신 버튼 */
+        .btn-renew {
+            margin-top: 16px;
+            width: 100%;
+            padding: 10px 0;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-renew:disabled {
+            background-color: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .btn-renew.active {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        .btn-renew.active:hover {
+            background-color: #fee2e2;
+        }
     </style>
 </head>
 
@@ -524,6 +549,7 @@
                         </div>
                     </div>
                     <div class="stat-value" id="val_access_token">-</div>
+                    <button class="btn-renew" id="btn_renew_access" disabled>갱신 불가 (정상)</button>
                 </div>
 
                 <div class="stat-card">
@@ -539,6 +565,7 @@
                         </div>
                     </div>
                     <div class="stat-value" id="val_approval_key">-</div>
+                    <button class="btn-renew" id="btn_renew_approval" disabled>갱신 불가 (정상)</button>
                 </div>
             </div>
 
@@ -692,14 +719,36 @@
                 // 1. 전체 사용자 수
                 document.getElementById('val_total_users').innerText = formatNumber(data.total_user_cnt) + ' 명';
 
-                // 2. 토큰 상태 표시
+                // 2. 토큰 상태 표시 + 갱신 버튼
                 const accessElem = document.getElementById('val_access_token');
                 accessElem.innerText = data.tokens.access_token;
                 accessElem.className = 'stat-value ' + getStatusClass(data.tokens.access_token);
 
+                const btnAccess = document.getElementById('btn_renew_access');
+                if (data.tokens.access_token === 'critical') {
+                    btnAccess.disabled = false;
+                    btnAccess.classList.add('active');
+                    btnAccess.textContent = '⚠️ Access Token 즉시 갱신';
+                } else {
+                    btnAccess.disabled = true;
+                    btnAccess.classList.remove('active');
+                    btnAccess.textContent = '갱신 불가 (정상)';
+                }
+
                 const approvalElem = document.getElementById('val_approval_key');
                 approvalElem.innerText = data.tokens.approval_key;
                 approvalElem.className = 'stat-value ' + getStatusClass(data.tokens.approval_key);
+
+                const btnApproval = document.getElementById('btn_renew_approval');
+                if (data.tokens.approval_key === 'critical') {
+                    btnApproval.disabled = false;
+                    btnApproval.classList.add('active');
+                    btnApproval.textContent = '⚠️ Approval Key 즉시 갱신';
+                } else {
+                    btnApproval.disabled = true;
+                    btnApproval.classList.remove('active');
+                    btnApproval.textContent = '갱신 불가 (정상)';
+                }
 
                 // 3. 시뮬레이션 기본 설정 (시드머니)
                 document.getElementById('val_seed_money').value = formatNumber(data.service_seed_money);
@@ -764,6 +813,37 @@
         }
 
         document.addEventListener('DOMContentLoaded', fetchAdminData);
+
+        async function renewToken(type) {
+            const url = type === 'access'
+                ? '/api/admin/renewal/access-token'
+                : '/api/admin/renewal/approval-key';
+            const btnId = type === 'access' ? 'btn_renew_access' : 'btn_renew_approval';
+            const btn = document.getElementById(btnId);
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 갱신 중...';
+
+            try {
+                const res = await fetch(url, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    btn.textContent = '✅ 갱신 완료';
+                    setTimeout(fetchAdminData, 1000); // 1초 후 상태 새로고침
+                } else {
+                    btn.textContent = '❌ 갱신 실패';
+                    btn.disabled = false;
+                    btn.classList.add('active');
+                }
+            } catch (e) {
+                btn.textContent = '❌ 네트워크 오류';
+                btn.disabled = false;
+                btn.classList.add('active');
+            }
+        }
+
+        document.getElementById('btn_renew_access').addEventListener('click', () => renewToken('access'));
+        document.getElementById('btn_renew_approval').addEventListener('click', () => renewToken('approval'));
     </script>
 </body>
 

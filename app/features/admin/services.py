@@ -4,7 +4,8 @@ from .admin_dashboard_dto import admin_dashboard_dto, token_status, user_ranking
 from app.models.user import User
 from app.models.holding import Holding
 from app.models.stock import Stock
-from ...api_clients.redis_client import init_redis
+from app.api_clients.auth.kis_auth import get_access_token, get_approval_key
+from app.extensions import redis_client
 from sqlalchemy import func, outerjoin, desc, asc
 
 
@@ -24,9 +25,8 @@ class admin_dashboard_service:
             return token_status.HEALTHY
 
     def get_token_info(self):
-        r = init_redis()
-        access_ttl = r.ttl('access_token')
-        approval_ttl = r.ttl('approval_key')
+        access_ttl = redis_client.ttl('access_token')
+        approval_ttl = redis_client.ttl('approval_key')
 
         return {
             "access_token" : self.get_token_status(access_ttl),
@@ -81,4 +81,18 @@ class admin_dashboard_service:
             asset_activate_status=self.get_asset_activate()
         )
 
+    @staticmethod
+    def admin_renew_access_token():
+        redis_client.delete('access_token') 
+        result = get_access_token()
+        if result:
+            return {"success": True, "message": "Access Token 갱신 완료"}
+        return {"success": False, "message": "Access Token 갱신 실패"}
 
+    @staticmethod
+    def admin_renew_approval_key():
+        redis_client.delete('approval_key')
+        result = get_approval_key()
+        if result:
+            return {"success": True, "message": "Approval Key 갱신 완료"}
+        return {"success": False, "message": "Approval Key 갱신 실패"}

@@ -31,6 +31,10 @@ def create_app(config_name='dev'):
     with app.app_context():
         from app.features.execution import worker
         worker.start_redis_listener(app)
+        from app.api_clients.websocket.ws_client import start_websocket_client
+        start_websocket_client(app)
+        from app.features.home.worker import start_oprc_vrss_listener
+        start_oprc_vrss_listener(app)
 
     if not scheduler.running:
         scheduler.start()
@@ -46,6 +50,7 @@ def create_app(config_name='dev'):
     from app.features.analysis import analysis_bp
     from app.features.admin import admin_bp
     from app.features.main import main_bp
+    from app.features.home import home_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(market_bp, url_prefix='/api/stocks')
@@ -53,6 +58,7 @@ def create_app(config_name='dev'):
     app.register_blueprint(execution_bp, url_prefix='/api/executions')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(home_bp, url_prefix='/api/home')
     app.register_blueprint(main_bp)
     
     return app

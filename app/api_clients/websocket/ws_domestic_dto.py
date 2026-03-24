@@ -8,6 +8,11 @@ class MarketPriceRequestHeader:
     tr_type: str="1"
     content_type: str="utf-8"
 
+    def to_dict(self):
+        d = asdict(self)
+        d["content-type"] = d.pop("content_type")
+        return d
+
 @dataclass
 class MarketPriceRequestBody:
     tr_id: str="H0STCNT0"
