@@ -10,6 +10,10 @@ def create_app(config_name='dev'):
     db.init_app(app)
     migrate.init_app(app, db)
     
+    # SocketIO 초기화
+    from app.extensions import socketio
+    socketio.init_app(app)
+    
     # Redis 초기화
     from app.extensions import redis_client
     redis_client.connection_pool.connection_kwargs.update({
@@ -18,15 +22,16 @@ def create_app(config_name='dev'):
         'db': app.config.get('REDIS_DB', 0),
         'password': app.config.get('REDIS_PASSWORD')
     })
-    
     # Scheduler 초기화 및 시작
     scheduler.init_app(app)
-    
+
+    # # import 하게 되면 메모리에 load되어 스케줄 등록 가능
+    from app.api_clients import task_schedules
     # 워커 등록 및 실시간 리스너 시작
     with app.app_context():
         from app.features.execution import worker
         worker.start_redis_listener(app)
-        
+
     if not scheduler.running:
         scheduler.start()
     
@@ -39,6 +44,7 @@ def create_app(config_name='dev'):
     from app.features.trading import trading_bp
     from app.features.execution import execution_bp
     from app.features.analysis import analysis_bp
+    from app.features.admin import admin_bp
     from app.features.main import main_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -46,6 +52,7 @@ def create_app(config_name='dev'):
     app.register_blueprint(trading_bp, url_prefix='/api/orders')
     app.register_blueprint(execution_bp, url_prefix='/api/executions')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(main_bp)
     
     return app

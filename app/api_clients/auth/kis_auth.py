@@ -22,7 +22,7 @@ load_dotenv()
 
 def get_approval_key():
     # 갱신이 필요한지 여부 체크 (Boolean)
-    status_ok = auth_to_redis.is_approval_key_ttl_expired()
+    status_ok = auth_to_redis.is_approval_key_ttl_valid()
     if status_ok:
         return auth_to_redis.get_approval_key_from_redis()
 
@@ -40,10 +40,11 @@ def get_approval_key():
         return my_approval_key.get_approval_key
     else:
         print(f"🐦‍🔥 Get Approval key fail! code: {res.status_code}")
+        return ""
 
 def get_access_token():
     # 캐시된 값 있으면 캐시값 return
-    status_ok = auth_to_redis.is_access_token_ttl_expired()
+    status_ok = auth_to_redis.is_access_token_ttl_valid()
     if status_ok:
         return auth_to_redis.get_access_token_from_redis()
 
@@ -68,4 +69,5 @@ def get_access_token():
         return my_access_token.get_access_token 
     else:
         print(f"🐦‍🔥Get Access token fail! code: {res.json().get('error_description')}")
+        return ""
 
