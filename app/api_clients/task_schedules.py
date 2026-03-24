@@ -14,7 +14,13 @@ def renewal_redis():
         get_approval_key()
         print("⏰ RENEW redis approval_key by scheculer")
 
-@scheduler.task('cron', id='get_daily_stock_data', hour='15', minute='30')
+@scheduler.task('cron', id='get_daily_stock_data', hour='15', minute='31')
+def get_daily_stock_data():
+    #저장 로직
+    pass
+
+#test 용도로 한번 실행되도록
+@scheduler.task('interval', id='test_get_daily_stock_data', seconds=10000)
 def get_daily_stock_data():
     #저장 로직
     pass
