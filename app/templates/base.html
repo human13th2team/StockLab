@@ -14,10 +14,13 @@
             <div class="text-2xl font-bold tracking-tight">
                 <a href="{{ url_for('main.index') }}" class="hover:text-indigo-200 transition-colors">StockLab</a>
             </div>
-            <ul class="flex space-x-8 font-medium">
+            <ul id="nav-links" class="flex space-x-8 font-medium">
                 <li><a href="{{ url_for('main.index') }}" class="hover:text-indigo-200 transition-colors">홈</a></li>
-                <li><a href="{{ url_for('analysis.report') }}" class="hover:text-indigo-200 transition-colors">분석 리포트</a></li>
-                <li><a href="{{ url_for('auth.login') }}" class="px-4 py-2 bg-indigo-500 rounded-lg hover:bg-indigo-400 transition-all">로그인</a></li>
+                <li id="guest-nav"><a href="{{ url_for('auth.login_page') }}" class="px-4 py-2 bg-indigo-500 rounded-lg hover:bg-indigo-400 transition-all">로그인</a></li>
+                <li id="user-nav" class="hidden flex space-x-4">
+                    <a href="{{ url_for('auth.profile_page') }}" class="hover:text-indigo-200 transition-colors">내 정보 수정</a>
+                    <button onclick="logout()" class="text-indigo-200 hover:text-white transition-colors">로그아웃</button>
+                </li>
             </ul>
         </nav>
     </header>
@@ -34,7 +37,26 @@
         </div>
     </footer>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        function checkGlobalAuth() {
+            const token = localStorage.getItem('access_token');
+            const guestNav = document.getElementById('guest-nav');
+            const userNav = document.getElementById('user-nav');
+            
+            if (token && guestNav && userNav) {
+                guestNav.classList.add('hidden');
+                userNav.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_nickname');
+            window.location.href = "{{ url_for('auth.login_page') }}";
+        }
+
+        window.addEventListener('DOMContentLoaded', checkGlobalAuth);
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

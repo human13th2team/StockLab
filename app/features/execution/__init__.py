@@ -1,5 +1,5 @@
 from flask import Blueprint
 
-history_bp = Blueprint('history', __name__)
+execution_bp = Blueprint('execution', __name__)
 
 from . import routes

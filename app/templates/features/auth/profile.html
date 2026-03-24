@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}내 정보 수정 - StockLab{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-8">
+    <div class="text-center mb-10">
+        <h2 class="text-4xl font-extrabold text-slate-800 mb-2">계정 관리</h2>
+        <p class="text-slate-500">이메일, 닉네임, 비밀번호를 수정하거나 계정을 삭제할 수 있습니다.</p>
+    </div>
+
+    <form id="profile-form" class="space-y-6">
+        <div>
+            <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">이메일</label>
+            <input type="email" id="email" name="email" required 
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+        </div>
+
+        <div>
+            <label for="nickname" class="block text-sm font-semibold text-slate-700 mb-1">닉네임</label>
+            <input type="text" id="nickname" name="nickname" required 
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+        </div>
+
+        <div>
+            <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">새 비밀번호 (변경 시에만 입력)</label>
+            <input type="password" id="password" name="password" 
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                placeholder="비워두면 기존 비밀번호 유지">
+        </div>
+
+        <button type="submit" 
+            class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1">
+            변경 사항 저장하기
+        </button>
+
+        <div class="pt-10 mt-10 border-t border-slate-100">
+            <h3 class="text-lg font-bold text-red-600 mb-2">위험 구역</h3>
+            <p class="text-sm text-slate-500 mb-4">계정을 삭제하면 모든 투자 데이터와 자산 정보가 영구적으로 삭제되며 복구할 수 없습니다.</p>
+            <button type="button" onclick="deleteAccount()" 
+                class="w-full py-3 bg-white border-2 border-red-100 text-red-600 font-bold rounded-xl hover:bg-red-50 hover:border-red-200 transition-all">
+                계정 영구 삭제 (회원 탈퇴)
+            </button>
+        </div>
+
+        <a href="{{ url_for('main.index') }}" class="block text-center text-sm text-slate-500 mt-6 hover:underline">
+            취소하고 돌아가기
+        </a>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = "{{ url_for('auth.login_page') }}";
+    }
+
+    // 초기 정보 불러오기
+    async function loadProfile() {
+        try {
+            const response = await fetch('/api/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('email').value = data.email;
+                document.getElementById('nickname').value = data.nickname;
+            } else {
+                alert('사용자 정보를 불러올 수 없습니다. 다시 로그인해 주세요.');
+                logout();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    // 정보 수정 제출
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const nickname = document.getElementById('nickname').value;
+        const password = document.getElementById('password').value;
+        
+        const body = { email, nickname };
+        if (password) body.password = password;
+        
+        try {
+            const response = await fetch('/api/auth/me', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(body)
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('계정 정보가 성공적으로 수정되었습니다!');
+                localStorage.setItem('user_nickname', data.user.nickname); // 닉네임 갱신
+                window.location.reload();
+            } else {
+                alert('수정 실패: ' + data.msg);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('연결 오류가 발생했습니다.');
+        }
+    });
+
+    // 계정 삭제 (회원 탈퇴)
+    async function deleteAccount() {
+        if (!confirm('정말로 계정을 삭제하시겠습니까? 모든 데이터가 사라지며 취소할 수 없습니다.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/auth/me', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+            
+            if (response.ok) {
+                alert('계정이 삭제되었습니다. 그동안 이용해 주셔서 감사합니다.');
+                logout(); // 토큰 삭제 및 로그인 페이지 이동
+            } else {
+                alert('삭제 실패: 서버 오류가 발생했습니다.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('연결 오류가 발생했습니다.');
+        }
+    }
+
+    loadProfile();
+</script>
+{% endblock %}

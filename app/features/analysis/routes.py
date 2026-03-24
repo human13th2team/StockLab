@@ -6,9 +6,9 @@ from .services import PortfolioService, AnalysisAIService
 portfolio_service = PortfolioService()
 ai_service = AnalysisAIService()
 
-@analysis_bp.route('/report')
+@analysis_bp.route('/report', methods=['GET'])
 def report():
-    return render_template('analysis/report.html')
+    return render_template('features/analysis/report.html')
 
 @analysis_bp.route('/portfolio', methods=['GET'])
 def get_portfolio():
