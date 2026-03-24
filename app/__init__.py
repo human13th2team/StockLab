@@ -36,13 +36,12 @@ def create_app(config_name='dev'):
     from app.features.main import main_bp
     app.register_blueprint(main_bp)
     
-    # 스케줄러 초기화 및 시작
-    from apscheduler.schedulers.background import BackgroundScheduler
-    from app.services.admin_service import AdminService
+    # 스케줄러 초기화 및 시작 (app.services.admin_service 누락으로 인한 임시 비활성화)
+    # from apscheduler.schedulers.background import BackgroundScheduler
+    # from app.services.admin_service import AdminService
     
-    scheduler = BackgroundScheduler()
-    # 매주 월요일 오전 9시에 자금 지급 (예시)
-    scheduler.add_job(func=AdminService.weekly_funding_job, trigger="cron", day_of_week="mon", hour=9)
-    scheduler.start()
+    # scheduler = BackgroundScheduler()
+    # scheduler.add_job(func=AdminService.weekly_funding_job, trigger="cron", day_of_week="mon", hour=9)
+    # scheduler.start()
     
     return app

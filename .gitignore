@@ -6,6 +6,8 @@ __pycache__/
 env/
 venv/
 ENV/
+.env
+.agents
 
 # Secrets
 .env
