@@ -46,7 +46,7 @@ def signup():
 def login_page():
     return render_template('features/auth/login.html')
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     data = request.get_json()
     email = data.get('email')

@@ -1,7 +1,7 @@
 from flask import jsonify, request, render_template
 from . import analysis_bp
 
-@analysis_bp.route('/report')
+@analysis_bp.route('/report', methods=['GET'])
 def report():
     return render_template('features/analysis/report.html')
 
