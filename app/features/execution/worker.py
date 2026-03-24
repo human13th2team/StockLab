@@ -13,6 +13,7 @@ def handle_price_update(message):
         current_price = data.get('current_price')
         
         if ticker_code and current_price:
+            print(f"📈 [Redis Worker] 실시간 시세 수신: {ticker_code} -> {current_price}")
             # Flask App Context 내에서 실행
             from flask import current_app
             with current_app.app_context():
