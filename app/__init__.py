@@ -22,11 +22,11 @@ def create_app(config_name='dev'):
         'db': app.config.get('REDIS_DB', 0),
         'password': app.config.get('REDIS_PASSWORD')
     })
-    # import 하게 되면 메모리에 load되어 스케줄 등록 가능
-    import app.api_clients.task_schedules
     # Scheduler 초기화 및 시작
     scheduler.init_app(app)
-    
+
+    # # import 하게 되면 메모리에 load되어 스케줄 등록 가능
+    from app.api_clients import task_schedules
     # 워커 등록 및 실시간 리스너 시작
     with app.app_context():
         from app.features.execution import worker
