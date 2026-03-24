@@ -121,10 +121,39 @@
             font-size: 18px;
             font-weight: 700;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        
+        /* 탭 메뉴 스타일 */
+        .period-tabs {
+            display: inline-flex;
+            gap: 4px;
+            background-color: #f4f6f8;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #718096;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #1a202c;
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #1a202c;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .card-title-badge {
             font-size: 12px;
@@ -145,7 +174,7 @@
             padding: 12px 16px;
             color: #a0aec0;
             font-weight: 500;
-            font-size: 12px;
+            font-size: 13px;
             text-align: right;
             border-bottom: 1px solid #edf0f5;
             letter-spacing: 0.03em;
@@ -160,18 +189,18 @@
         tr:last-child td { border-bottom: none; }
         tr:hover td { background-color: #fafbfc; }
 
-        /* 컬럼 너비 배분 - 등락률 여유있게, 코드 간결하게 */
-        th:nth-child(1), td:nth-child(1) { width: 9%;  text-align: left; padding-left: 4px;  } /* 코드 */
-        th:nth-child(2), td:nth-child(2) { width: 33%; text-align: left; } /* 로고+종목명 */
-        th:nth-child(3), td:nth-child(3) { width: 18%; } /* 현재가 */
-        th:nth-child(4), td:nth-child(4) { width: 13%; } /* 최고가 */
-        th:nth-child(5), td:nth-child(5) { width: 13%; } /* 최저가 */
-        th:nth-child(6), td:nth-child(6) { width: 14%; padding-right: 12px; text-align: right; } /* 등락률 */
+        /* 컬럼 너비 배분 - 좌측 열 폭을 다소 줄이고 우측 값들의 여백을 넓혀 쏠림 현상 방지 */
+        th:nth-child(1), td:nth-child(1) { width: 9%;  text-align: left; padding-left: 8px;  } /* 코드 */
+        th:nth-child(2), td:nth-child(2) { width: 27%; text-align: left; } /* 로고+종목명 */
+        th:nth-child(3), td:nth-child(3) { width: 16%; padding-right: 20px; } /* 시가,현재가 */
+        th:nth-child(4), td:nth-child(4) { width: 16%; padding-right: 20px; } /* 최고가 */
+        th:nth-child(5), td:nth-child(5) { width: 16%; padding-right: 20px; } /* 최저가 */
+        th:nth-child(6), td:nth-child(6) { width: 16%; padding-right: 16px; text-align: right; } /* 종가,등락률 */
 
         /* 코드 셀 */
         .cell-code {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            font-size: 12px;
+            font-size: 13px;
             color: #cbd5e0;
             font-weight: 500;
         }
@@ -205,7 +234,7 @@
             flex-shrink: 0;
         }
         .stock-name-cell {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             color: #1a202c;
             line-height: 1.2;
@@ -217,13 +246,13 @@
 
         /* 가격 */
         .price-val {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
             color: #1a202c;
             font-variant-numeric: tabular-nums;
         }
         .high-val, .low-val {
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 500;
             font-variant-numeric: tabular-nums;
             color: #a0aec0;
@@ -234,9 +263,9 @@
         /* 등락률 배지 - 여유 패딩으로 잘리지 않게 */
         .rate-val {
             display: inline-block;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
-            padding: 5px 12px;
+            padding: 6px 14px;
             border-radius: 6px;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
@@ -292,9 +321,19 @@
         <!-- 대시보드 본문 -->
         <div class="content-area">
             <div class="card">
-                <div class="card-title">
-                    <span>국내 주식 실시간 시세</span>
-                    <span class="card-title-badge">운영 상태: 정상 <span id="time-display">{{ current_time }}</span></span>
+                <div class="card-title" style="margin-bottom: 24px;">
+                    <div>
+                        <span style="font-size: 18px; font-weight: 700;">국내 주식 실시간 시세</span>
+                        <span class="card-title-badge" style="margin-left: 10px;">운영 상태: 정상 <span id="time-display">{{ current_time }}</span></span>
+                    </div>
+                    
+                    <!-- 기간 선택 탭 -->
+                    <div class="period-tabs" style="margin-bottom: 0;">
+                        <button class="tab-btn {% if period == 'realtime' %}active{% endif %}" onclick="location.href='?period=realtime'">실시간</button>
+                        <button class="tab-btn {% if period == '1d' %}active{% endif %}" onclick="location.href='?period=1d'">1일</button>
+                        <button class="tab-btn {% if period == '1w' %}active{% endif %}" onclick="location.href='?period=1w'">1주일</button>
+                        <button class="tab-btn {% if period == '1m' %}active{% endif %}" onclick="location.href='?period=1m'">1개월</button>
+                    </div>
                 </div>
                 
                 <table>
@@ -302,10 +341,17 @@
                         <tr>
                             <th style="text-align:left; padding-left:8px;">코드</th>
                             <th style="text-align:left;">종목</th>
-                            <th>현재가</th>
+                            {% if period == 'realtime' %}
+                            <th id="col-last">현재가</th>
+                            <th id="col-high">최고가</th>
+                            <th id="col-low">최저가</th>
+                            <th id="col-rate" style="padding-right:8px;">등락률</th>
+                            {% else %}
+                            <th>시가</th>
                             <th>최고가</th>
                             <th>최저가</th>
-                            <th style="padding-right:8px;">등락률</th>
+                            <th style="padding-right:8px;">종가</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody id="stock-list">
@@ -324,6 +370,7 @@
                                     <span class="stock-name-cell">{{ stock.stock_name }}</span>
                                 </div>
                             </td>
+                            {% if period == 'realtime' %}
                             <td><span class="price-val">{{ "{:,.0f}".format(stock.price) }}</span></td>
                             <td><span class="high-val">-</span></td>
                             <td><span class="low-val">-</span></td>
@@ -332,6 +379,14 @@
                                     {{ stock.oprc_vrss_rate }}
                                 </span>
                             </td>
+                            {% else %}
+                            <td><span class="price-val">{{ "{:,.0f}".format(stock.open_price) if stock.open_price else '-' }}</span></td>
+                            <td><span class="high-val">{{ "{:,.0f}".format(stock.high_price) if stock.high_price else '-' }}</span></td>
+                            <td><span class="low-val">{{ "{:,.0f}".format(stock.low_price) if stock.low_price else '-' }}</span></td>
+                            <td style="padding-right:8px;">
+                                <span class="price-val">{{ "{:,.0f}".format(stock.close_price) if stock.close_price else '-' }}</span>
+                            </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -347,8 +402,12 @@
         }
 
         const socket = io();
+        const currentMode = "{{ period }}"; // Jinja에서 현재 모드 받기
 
         socket.on('oprc_vrss_update', function(data) {
+            // 현재 모드가 실시간이 아니면 웹소켓 업데이트 무시
+            if (currentMode !== 'realtime') return;
+
             const rowElement = document.getElementById("row-" + data.stock_code);
 
             if (rowElement) {
@@ -390,7 +449,9 @@
         });
 
         socket.on('connect', function() {
-            console.log("웹소켓 연결 및 실시간 구독 시작");
+            if (currentMode === 'realtime') {
+                console.log("웹소켓 연결 및 실시간 구독 시작");
+            }
         });
     </script>
 </body>

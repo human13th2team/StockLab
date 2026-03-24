@@ -67,7 +67,7 @@ class admin_dashboard_service:
         kosdaq_count = Stock.query.filter_by(
             market_type="KOSDAQ"
         ).count()
-        # print("짝수" if num % 2 == 0 else "홀수")
+        
         return asset_activate_dto(
             is_kospi_activate=True if kospi_count > 0 else False,
             is_kosdaq_activate=True if kosdaq_count > 0 else False

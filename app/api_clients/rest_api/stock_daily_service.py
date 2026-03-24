@@ -37,7 +37,7 @@ class stock_daily_service:
         ] # response에서 필요한 키-값만 지정
         today_yyyymmdd = datetime.today().strftime('%Y%m%d')
         if is_test:
-            res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, "20260319", "20260323")
+            res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, "20260223", "20260323")
         else:
             res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, today_yyyymmdd, today_yyyymmdd)
         if res.status_code == 200:
@@ -59,7 +59,7 @@ class stock_daily_service:
                     )
                     db.session.add(new_stock_daily)
                     db.session.commit()
-                    time.sleep(1.2)
+                    time.sleep(1.4)
             return f"⛅️ {extract_columns['stck_bsop_date']} {stock_code} data is stored"
         else:
             return f"uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice"

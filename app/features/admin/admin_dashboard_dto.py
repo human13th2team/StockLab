@@ -29,5 +29,3 @@ class admin_dashboard_dto(BaseModel):
     service_seed_money: int=1000000
     # 자산군 상태
     asset_activate_status: asset_activate_dto
-
-

@@ -18,13 +18,13 @@ def renewal_redis():
         get_approval_key()
         print("⏰ RENEW redis approval_key by scheculer")
 
-@scheduler.task('cron', id='get_daily_stock_data', hour='15', minute='31')
+@scheduler.task('cron', id='get_daily_stock_data', hour='21', minute='48')
 def get_daily_stock_data():
     print("⏳ Interval Schedule: get_daily_stock_data")
     #저장 로직 Stock에 저장된 모든 ticker_code 대해 일별 시세 데이터 저장
     with scheduler.app.app_context():
         all_stocks = Stock.query.with_entities(Stock.ticker_code).all()
         for stock in all_stocks:
-            # True이면 20260319 ~ 20260323의 값 요청 > 테스트용
+            # True이면 20260223 ~ 20260323의 값 요청 > 메인페이지 테스트용
             # False이면 당일 값 요청 > 실전
-            print(stock_daily_service.get_stock_daily(stock[0], False))
+            print(stock_daily_service.get_stock_daily(stock[0], True))
