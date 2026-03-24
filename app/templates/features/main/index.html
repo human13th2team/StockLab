@@ -3,13 +3,20 @@
 {% block title %}메인 페이지{% endblock %}
 
 {% block content %}
-    <h1 class="text-4xl font-extrabold text-slate-900 mb-6 tracking-tight">StockLab에 오신 것을 환영합니다!</h1>
-    <p class="text-lg text-slate-600 leading-relaxed max-w-2xl">
-        대표님, 요청하신 기능별 개발이 가능한 **모듈형 Flask 프로젝트**가 준비되었습니다. 
-        이제 팀원들과 함께 실시간 주가 분석, 인증 시스템 등 다양한 기능을 Tailwind CSS로 아름답게 구현해 보세요.
-    </p>
-    <div class="mt-10 flex space-x-4">
-        <a href="{{ url_for('analysis.report') }}" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg">분석 시작하기</a>
-        <a href="https://tailwindcss.com" target="_blank" class="px-6 py-3 bg-white text-slate-700 font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">Tailwind 문서 확인</a>
-    </div>
+<h1 class="text-4xl font-extrabold text-slate-900 mb-6 tracking-tight">StockLab에 오신 것을 환영합니다!</h1>
+<p class="text-lg text-slate-600 leading-relaxed max-w-2xl">
+    대표님, 요청하신 기능별 개발이 가능한 **모듈형 Flask 프로젝트**가 준비되었습니다.
+    이제 팀원들과 함께 실시간 주가 분석, 인증 시스템 등 다양한 기능을 Tailwind CSS로 아름답게 구현해 보세요.
+</p>
+<div class="mt-10 flex space-x-4">
+    <a href="{{ url_for('main.trading') }}"
+        class="px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-all shadow-md hover:shadow-lg">📈
+        트레이딩 시작</a>
+    <a href="{{ url_for('analysis.report') }}"
+        class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg">분석
+        리포트</a>
+    <a href="https://tailwindcss.com" target="_blank"
+        class="px-6 py-3 bg-white text-slate-700 font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">Tailwind
+        문서 확인</a>
+</div>
 {% endblock %}
