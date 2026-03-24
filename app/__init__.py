@@ -1,11 +1,13 @@
 from flask import Flask
-from app.extensions import db, migrate, scheduler
+from app.extensions import db, migrate, scheduler, jwt
 from config import config_by_name
 
 def create_app(config_name='dev'):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
-    
+
+    # JWT 초기화
+    jwt.init_app(app)
     # DB 및 Migrate 초기화
     db.init_app(app)
     migrate.init_app(app, db)

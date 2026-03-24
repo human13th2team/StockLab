@@ -6,7 +6,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-12345'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+
     # MariaDB Connection URL: mysql+pymysql://user:password@host:port/dbname
     DB_USER = os.environ.get('DB_USER') or 'root'
     DB_PASSWORD = os.environ.get('DB_PASSWORD') or ''

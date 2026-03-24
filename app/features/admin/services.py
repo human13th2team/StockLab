@@ -5,11 +5,11 @@ from app.models.user import User
 from app.models.holding import Holding
 from app.models.stock import Stock
 from app.api_clients.auth.kis_auth import get_access_token, get_approval_key
-from app.extensions import redis_client
+from app.extensions import redis_client, jwt
 from sqlalchemy import func, outerjoin, desc, asc
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
-
-class admin_dashboard_service:
+class AdminDashboardService:
     """관리자 페이지 정보 제공 서비스"""
     @staticmethod
     def get_total_user():
@@ -96,3 +96,13 @@ class admin_dashboard_service:
         if result:
             return {"success": True, "message": "Approval Key 갱신 완료"}
         return {"success": False, "message": "Approval Key 갱신 실패"}
+
+    @staticmethod
+    def is_admin_role():
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        # 사용자가 아니거나 역할이 admin
+        if not user or not user.roles:
+            return False
+        else:
+            return True

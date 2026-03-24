@@ -14,7 +14,6 @@ class KisApi:
         self.app_secret = os.getenv('KIS_APP_SECRET')
         self.base_url = os.getenv('IMMINATION_DOMAIN')
         self.token = None
-        self.redis = init_redis()
 
     def get_current_price(self, ticker_code):
         """실시간 현재가 조회 (Redis 캐시 활용)"""

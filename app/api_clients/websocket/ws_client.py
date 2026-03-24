@@ -7,12 +7,11 @@ import os
 from dotenv import load_dotenv
 
 from app.models.stock import Stock
+from app.extensions import redis_client
 from app.api_clients.auth.auth_to_redis import get_approval_key_from_redis
 
 from app.api_clients.websocket import ws_domestic_dto
-from app.api_clients.redis_client import init_redis
 load_dotenv()
-redis = init_redis()
 
 #MKSC_SHRN_ISCD: str  #유가증권 단축 종목코드
 MKSC_SHRN_ISCD_IDX = 0
@@ -71,34 +70,31 @@ def on_message(ws, msg):
         price = int(data[STCK_PRPR_IDX])
         stock_code = data[MKSC_SHRN_ISCD_IDX]
         # 가장 최신값
-        last_price = redis.lindex(f"price:{stock_code}", 0)
+        last_price = redis_client.lindex(f"price:{stock_code}", 0)
         high  = int(data[STCK_HGPR_IDX]) # 주식 최고가
         low   = int(data[STCK_LWPR_IDX]) # 주식 최저가
 
         if last_price is not None and int(last_price) == price:
             print(f"{stock_code} Redis not updated (가격 동일: {price})")
         else:
-            redis.lpush(f"price:{stock_code}", price)
-            redis.ltrim(f"price:{stock_code}", 0, 9)
+            redis_client.lpush(f"price:{stock_code}", price)
+            redis_client.ltrim(f"price:{stock_code}", 0, 9)
             # 체결 엔진 알림 발행
             message = {
                 "ticker_code": stock_code,
                 "current_price": price
             }
-            redis.publish("price_updates", json.dumps(message))
+            redis_client.publish("price_updates", json.dumps(message))
 
             oprc_vrss_rate = calculate_oprc_vrss_rate(price, data[OPRC_VRSS_PRPR_SIGN_IDX], int(data[OPRC_VRSS_PRPR_IDX]))
-            redis.set(f"oprc_vrss:{stock_code}", oprc_vrss_rate)
+            redis_client.set(f"oprc_vrss:{stock_code}", oprc_vrss_rate)
             home_msg = {
                 "stock_code": stock_code,
                 "oprc_vrss_rate": oprc_vrss_rate,
                 "higher_price": high,
                 "lowest_proce": low
             }
-            redis.publish("oprc_vrss_updates", json.dumps(home_msg))
-
-
-
+            redis_client.publish("oprc_vrss_updates", json.dumps(home_msg))
     else:
         pass
         # 메시지가 너무 많아 주석처리
