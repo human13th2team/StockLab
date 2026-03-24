@@ -6,7 +6,7 @@ from . import auth_bp
 
 @auth_bp.route('/signup', methods=['GET'])
 def signup_page():
-    return render_template('auth/signup.html')
+    return render_template('features/auth/signup.html')
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
@@ -44,7 +44,7 @@ def signup():
 
 @auth_bp.route('/login', methods=['GET'])
 def login_page():
-    return render_template('auth/login.html')
+    return render_template('features/auth/login.html')
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -150,4 +150,4 @@ def delete_me():
 
 @auth_bp.route('/profile', methods=['GET'])
 def profile_page():
-    return render_template('auth/profile.html')
+    return render_template('features/auth/profile.html')
