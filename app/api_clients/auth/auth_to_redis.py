@@ -30,10 +30,17 @@ def store_access_token(value):
 
 def get_approval_key_from_redis():
     val = r.get("approval_key")
-    return val.decode("utf-8") if val else ""
+    if val:
+        return val.decode("utf-8")
+    import os
+    return os.getenv("KIS_APPROVAL_KEY", "")
+
 def get_access_token_from_redis():
     val = r.get("access_token")
-    return val.decode("utf-8") if val else ""
+    if val:
+        return val.decode("utf-8")
+    import os
+    return os.getenv("KIS_ACCESS_TOKEN", "")
 
 # 만료(False) 조건: 키가 존재하지 않거나, ttl이 600초 이내로 남은 경우
 def is_access_token_ttl_valid():
