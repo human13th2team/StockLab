@@ -11,6 +11,7 @@ KIS(한국투자증권) OAUTH 연동 함수
 ToDo:
     - 서비스 구조로 바꾸기...
 """
+import os
 import dataclasses
 
 import requests
@@ -25,6 +26,14 @@ def get_approval_key():
     status_ok = auth_to_redis.is_approval_key_ttl_valid()
     if status_ok:
         return auth_to_redis.get_approval_key_from_redis()
+
+    # API 키 존재 여부 확인
+    app_key = os.getenv('KIS_APP_KEY')
+    app_secret = os.getenv('KIS_APP_SECRET')
+    
+    if not app_key or not app_secret or app_key == 'your_kis_app_key' or app_secret == 'your_kis_app_secret':
+        print("⚠️ KIS API 키가 설정되지 않았습니다. 실시간 시세 기능을 사용할 수 없습니다.")
+        return ""
 
     header_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestBody())
@@ -47,6 +56,13 @@ def get_access_token():
     status_ok = auth_to_redis.is_access_token_ttl_valid()
     if status_ok:
         return auth_to_redis.get_access_token_from_redis()
+
+    # API 키 존재 여부 확인
+    app_key = os.getenv('KIS_APP_KEY')
+    app_secret = os.getenv('KIS_APP_SECRET')
+    
+    if not app_key or not app_secret or app_key == 'your_kis_app_key' or app_secret == 'your_kis_app_secret':
+        return ""
 
     header_dict = dataclasses.asdict(kis_auth_dto.AccessRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.AccessRequestBody())

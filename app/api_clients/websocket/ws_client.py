@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from app.models.stock import Stock
 from app.api_clients.auth.auth_to_redis import get_approval_key_from_redis
 
-import ws_domestic_dto
+from app.api_clients.websocket import ws_domestic_dto
 from app.api_clients.redis_client import init_redis
 load_dotenv()
 redis = init_redis()
@@ -23,21 +23,38 @@ STCK_HGPR_IDX = 8
 # STCK_LWPR: float    #주식 최저가
 STCK_LWPR_IDX = 9
 
-conect_key = get_approval_key_from_redis()
-
 def on_open(ws):
-    header = dataclasses.asdict(ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key))
-    # stocks에 저장된 종목 모두 구독
-    stocks = [stock.ticker_code for stock in Stock.query.all()]
-    for stock in stocks:
-        body = ws_domestic_dto.MarketPriceRequestBody(tr_key=stock).wrap_marketprice_request_body()
-        request = {
-            "header": header,
-            "body": body
-        }
-        ws.send(json.dumps(request))
-
-    print('🙋‍♀️OPENED connection start!!')
+    print('🙋‍♀️ WebSocket Connection Opened')
+    
+    # Flask 앱 컨텍스트 생성 (Stock 모델 조회를 위해 필요)
+    from app import create_app
+    app = create_app('dev')
+    
+    with app.app_context():
+        # Redis에서 최신 토큰 가져오기 (만약 없으면 바로 생성)
+        from app.api_clients.auth.kis_auth import get_approval_key
+        connect_key = get_approval_key()
+        
+        if not connect_key:
+            print("❌ Approval Key 발급 실패. 시세를 수집할 수 없습니다.")
+            ws.close()
+            return
+            
+        header = dataclasses.asdict(ws_domestic_dto.MarketPriceRequestHeader(approval_key=connect_key))
+        
+        # stocks 테이블에 저장된 모든 종목 구독
+        stocks = [stock.ticker_code for stock in Stock.query.all()]
+        if not stocks:
+            stocks = ['005930', '000660', '035420'] # 기본값
+            
+        for stock in stocks:
+            body = ws_domestic_dto.MarketPriceRequestBody(tr_key=stock).wrap_marketprice_request_body()
+            request = {
+                "header": header,
+                "body": body
+            }
+            ws.send(json.dumps(request))
+            print(f'📡 Subscribed: {stock}')
 
 def on_close(ws, status_code, close_msg):
     print('🚪CLOSED close_status_code=', status_code, " close_msg=", close_msg)
