@@ -8,25 +8,24 @@ import websocket
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-from app.api_clients.auth.kis_auth import get_approval_key
-from app.api_clients.redis_client import init_redis  
+from app.extensions import redis_client
 load_dotenv()
-redis = init_redis()  
 
 from app.api_clients.auth.kis_auth import get_approval_key
 
 load_dotenv()
 
-STOCK_CODE = "005930"  # 삼성전자
-
-WS_URL = os.getenv('IMMITATION_DOMAIN_WS', "ws://ops.koreainvestment.com:21000")
+STOCK_CODE = "035720"  # 카카오
 
 def fetch_fallback_key():
     print("💡 kis_auth.py가 객체를 반환하거나 캐시가 비어있어 직접 발급을 시도합니다.")
     res = requests.post(
-        "https://openapivts.koreainvestment.com:29443/oauth2/Approval",
+        url=os.getenv("KIS_WS_DOMAIN") + "oauth2/Approval",
         headers={"content-type": "application/json; utf-8"},
-        json={"grant_type": "client_credentials", "appkey": os.getenv('KIS_APP_KEY'), "secretkey": os.getenv('KIS_APP_SECRET')}
+        json={"grant_type": "client_credentials",
+              "appkey": os.getenv('KIS_APP_KEY'),
+              "secretkey": os.getenv('KIS_APP_SECRET')
+        }
     )
     if res.status_code == 200:
         return res.json().get('approval_key')
@@ -42,11 +41,11 @@ def on_message(ws, msg):
             redis_key = f"price:{code}"
             
             # Redis에 최신 가격 저장
-            redis.lpush(redis_key, price)
-            redis.ltrim(redis_key, 0, 9)
+            redis_client.lpush(redis_key, price)
+            redis_client.ltrim(redis_key, 0, 9)
             
             # Redis에서 방금 저장한 값 조회하여 확인
-            latest_price = redis.lindex(redis_key, 0)
+            latest_price = redis_client.lindex(redis_key, 0)
             if latest_price:
                 latest_price = latest_price.decode('utf-8')
                 
@@ -99,7 +98,7 @@ if __name__ == "__main__":
     print("🚀 [ws_test.py] KIS 실시간 체결가 수신 및 Redis 저장 데모 시작")
     
     ws = websocket.WebSocketApp(
-        WS_URL,
+        os.getenv("KIS_WS_DOMAIN"),
         on_open=on_open,
         on_message=on_message,
         on_error=on_error,

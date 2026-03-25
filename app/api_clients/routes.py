@@ -2,7 +2,6 @@ from flask import jsonify, request
 from . import api_clients_bp
 from app.api_clients.rest_api.market_data_service import MarketDataService
 
-
 @api_clients_bp.route('/search', methods=['GET'])
 def search_stocks():
     stock_name = request.args.get('q')

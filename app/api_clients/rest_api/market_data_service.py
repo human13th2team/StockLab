@@ -1,4 +1,5 @@
 import dataclasses
+import os
 
 import requests
 
@@ -10,6 +11,7 @@ class MarketDataService:
     @staticmethod
     # 종목 코드 기반으로 정보 찾아오기
     def search_stock_by_code(stock_code):
+        """주식 현재가 API 요청"""
         # 필요한 칼럼 리스트
         columns = [
             "stck_prpr",	# 주식 현재가
@@ -28,14 +30,13 @@ class MarketDataService:
             "FID_INPUT_ISCD": stock_code
         }
         res = requests.get(
-            "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-price",
+            url=os.getenv('KIS_DOMAIN') + "/uapi/domestic-stock/v1/quotations/inquire-price",
             headers=api_header,
             params=api_query_params
         )
         if res.status_code == 200:
             data = res.json().get('output', {})
             extract_data = {col: data.get(col, "").strip() for col in columns}
-            # extract_data['name'] = 프론트엔드에서 갖고 있는 정보로 대체 가능할 것 같음
             if extract_data['stck_prpr'] == "0":
                 return {"error": "없거나 상장폐지된 종목입니다"}, 404
             else:
@@ -46,7 +47,6 @@ class MarketDataService:
 
     @staticmethod
     def search_stock_by_name(stock_name):
-        # stock 테이블에서 이름과 매칭되는 종목코드 찾기
         stock_code = StockInfoService.get_stock_code_by_name(stock_name)
 
         if not stock_code:

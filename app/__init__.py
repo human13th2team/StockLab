@@ -1,3 +1,5 @@
+import time
+
 from flask import Flask
 from app.extensions import db, migrate, scheduler, jwt
 from config import config_by_name
@@ -6,16 +8,6 @@ def create_app(config_name='dev'):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
 
-    # JWT 초기화
-    jwt.init_app(app)
-    # DB 및 Migrate 초기화
-    db.init_app(app)
-    migrate.init_app(app, db)
-    
-    # SocketIO 초기화
-    from app.extensions import socketio
-    socketio.init_app(app)
-    
     # Redis 초기화
     from app.extensions import redis_client
     redis_client.connection_pool.connection_kwargs.update({
@@ -24,8 +16,20 @@ def create_app(config_name='dev'):
         'db': app.config.get('REDIS_DB', 0),
         'password': app.config.get('REDIS_PASSWORD')
     })
+    # JWT 초기화
+    jwt.init_app(app)
+    # DB 및 Migrate 초기화
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # SocketIO 초기화
+    from app.extensions import socketio
+    socketio.init_app(app)
+
     # Scheduler 초기화 및 시작
     scheduler.init_app(app)
+    if not scheduler.running:
+        scheduler.start()
 
     # # import 하게 되면 메모리에 load되어 스케줄 등록 가능
     from app.api_clients import task_schedules
@@ -38,9 +42,7 @@ def create_app(config_name='dev'):
         from app.features.home.worker import start_oprc_vrss_listener
         start_oprc_vrss_listener(app)
 
-    if not scheduler.running:
-        scheduler.start()
-    
+
     # 모델 등록
     from app import models
     

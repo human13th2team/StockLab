@@ -1,17 +1,4 @@
-"""
-KIS(한국투자증권) OAuth2 토큰 2가지 인메모리 저장
-
-이 모듈은 kis_token.py에서 호출한 함수로 토큰값을 저장한다
-
-주요 기능:
-    - Redis 저장 및 조회
-"""
-
-from dotenv import load_dotenv
-
 from app.extensions import redis_client
-
-load_dotenv()
 
 def store_approval_key(value):
     try:
@@ -32,17 +19,17 @@ def get_access_token_from_redis():
     val = redis_client.get("access_token")
     return val.decode("utf-8") if val else ""
 
-# 만료(False) 조건: 키가 존재하지 않거나, ttl이 600초 이내로 남은 경우
+# 만료 조건을 검사, 유효한 인증키인지 확인
 def is_access_token_ttl_valid():
     is_token_valid = True
     token_ttl = redis_client.ttl("access_token")
-    if (token_ttl is None) or (token_ttl < 600):
+    if (token_ttl is None) or (token_ttl < 7200):
         is_token_valid = False
     return is_token_valid
 
 def is_approval_key_ttl_valid():
     is_key_valid = True
     key_ttl = redis_client.ttl("approval_key")
-    if (key_ttl is None) or (key_ttl < 600):
+    if (key_ttl is None) or (key_ttl < 7200):
         is_key_valid = False
     return is_key_valid
