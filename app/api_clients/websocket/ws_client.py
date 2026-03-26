@@ -127,8 +127,9 @@ def on_message(ws, msg):
             }
             redis_client.publish("oprc_vrss_updates", json.dumps(home_msg))
     else:
+        pass
         # 메시지가 0으로 시작하지 않으면 (예: 성공/실패 JSON 응답) 내용 출력
-        print("📩 [KIS WS] Non-data message received: " + msg)
+        # print("📩 [KIS WS] Non-data message received: " + msg)
 
 def on_error(ws, error):
     print("💥 [KIS WS] Socket error=", error)

@@ -448,6 +448,7 @@
             border-radius: 50%;
             background-color: #dc2626;
         }
+
         /* 토큰 갱신 버튼 */
         .btn-renew {
             margin-top: 16px;
@@ -460,16 +461,19 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+
         .btn-renew:disabled {
             background-color: #f1f5f9;
             color: #94a3b8;
             cursor: not-allowed;
         }
+
         .btn-renew.active {
             background-color: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
         }
+
         .btn-renew.active:hover {
             background-color: #fee2e2;
         }
@@ -811,7 +815,7 @@
                     data.rankings.bottom_users.forEach((user, index) => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td class="col-rank text-red">-</td>
+                            <td class="col-rank text-blue">${index + 1}</td>
                             <td>${user.nickname}</td>
                             <td class="text-right text-red">${formatNumber(user.all_cash)} ₩</td>
                         `;
@@ -840,7 +844,7 @@
             btn.textContent = '⏳ 갱신 중...';
 
             try {
-                const res = await fetch(url, { 
+                const res = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Authorization': 'Bearer ' + token
