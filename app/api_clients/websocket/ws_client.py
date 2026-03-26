@@ -29,6 +29,9 @@ OPRC_VRSS_PRPR_SIGN_IDX = 25
 # OPRC_VRSS_PRPR      #시가 대비(num)
 OPRC_VRSS_PRPR_IDX = 26
 
+# --- 🚀 로컬 캐시 추가 (메모리에 이전 가격 저장) ---
+last_prices_cache = {}
+
 def calculate_oprc_vrss_rate(current_price, sign, vrss):
     """시가, 시가대비 연산으로 등락률 집계"""
     if sign in ['1', '2']:
@@ -71,61 +74,68 @@ def on_close(ws, status_code, close_msg):
     print('🚪 [KIS WS] CLOSED close_status_code=', status_code, " close_msg=", close_msg)
 
 def on_message(ws, msg):
-    """실시간 체결가를 받아와서 Redis에 저장"""
+    """실시간 체결가를 받아와서 가격이 변했을 때만 Redis에 저장"""
     if msg.startswith('0'):
         part = msg.split('|')
         tr_id = part[1]
         raw_data = part[3]
         if tr_id != "H0STCNT0":
             return
+        
         data = raw_data.split('^')
         price = int(data[STCK_PRPR_IDX])
         stock_code = data[MKSC_SHRN_ISCD_IDX]
-        # 기존에 저장된 가장 최신값
-        last_price = redis_client.lindex(f"price:{stock_code}", 0)
+        
+        # --- 🚀 핵심 수정 부분: Redis 조회 대신 로컬 캐시 조회 ---
+        last_price = last_prices_cache.get(stock_code)
+        
+        # 가격이 그대로면 즉시 종료 (Redis 요청 완전 차단)
+        if last_price == price:
+            return 
+        
+        # 가격이 변했으므로 로컬 캐시 먼저 업데이트
+        last_prices_cache[stock_code] = price
+        # --------------------------------------------------------
+
         high  = int(data[STCK_HGPR_IDX]) # 주식 최고가
         low   = int(data[STCK_LWPR_IDX]) # 주식 최저가
 
-        # 기존에 저장된 최신값과 현재 체결가가 동일하면 Redis에 저장하지 않는다
-        if last_price is not None and int(last_price) == price:
-            pass # print(f"{stock_code} Redis not updated (가격 동일: {price})")
         # 새로운 값이 들어온 경우 Redis에 저장한다
-        else:
-            redis_client.lpush(f"price:{stock_code}", price)
-            redis_client.ltrim(f"price:{stock_code}", 0, 9)
-            
-            # 시가 데이터 (API 제공 고정값 사용)
-            opening_price = int(data[STCK_OPRC_IDX])
+        redis_client.lpush(f"price:{stock_code}", price)
+        redis_client.ltrim(f"price:{stock_code}", 0, 9)
+        
+        # 시가 데이터 (API 제공 고정값 사용)
+        opening_price = int(data[STCK_OPRC_IDX])
 
-            # Redis Hash 저장 (상세 정보)
-            redis_client.hset(f"stock_info:{stock_code}", mapping={
-                "current": price,
-                "open": opening_price,
-                "high": high,
-                "low": low
-            })
+        # Redis Hash 저장 (상세 정보)
+        redis_client.hset(f"stock_info:{stock_code}", mapping={
+            "current": price,
+            "open": opening_price,
+            "high": high,
+            "low": low
+        })
 
-            # 체결 엔진(execution) 및 프론트엔드 통신을 위한 알림 발행
-            message = {
-                "ticker_code": stock_code,
-                "price": price,          # 프론트엔드(order.html) 호환용
-                "current_price": price,   # 사용자 정의 필드 유지
-                "open": opening_price,
-                "high": high,
-                "low": low
-            }
-            redis_client.publish("price_updates", json.dumps(message))
+        # 체결 엔진(execution) 및 프론트엔드 통신을 위한 알림 발행
+        message = {
+            "ticker_code": stock_code,
+            "price": price,          # 프론트엔드(order.html) 호환용
+            "current_price": price,   # 사용자 정의 필드 유지
+            "open": opening_price,
+            "high": high,
+            "low": low
+        }
+        redis_client.publish("price_updates", json.dumps(message))
 
-            # 홈페이지(home)에 등락률 변동을 알리기 위한 알림 발행
-            oprc_vrss_rate = calculate_oprc_vrss_rate(price, data[OPRC_VRSS_PRPR_SIGN_IDX], int(data[OPRC_VRSS_PRPR_IDX]))
-            redis_client.set(f"oprc_vrss:{stock_code}", oprc_vrss_rate)
-            home_msg = {
-                "stock_code": stock_code,
-                "oprc_vrss_rate": oprc_vrss_rate,
-                "higher_price": high,
-                "lowest_price": low
-            }
-            redis_client.publish("oprc_vrss_updates", json.dumps(home_msg))
+        # 홈페이지(home)에 등락률 변동을 알리기 위한 알림 발행
+        oprc_vrss_rate = calculate_oprc_vrss_rate(price, data[OPRC_VRSS_PRPR_SIGN_IDX], int(data[OPRC_VRSS_PRPR_IDX]))
+        redis_client.set(f"oprc_vrss:{stock_code}", oprc_vrss_rate)
+        home_msg = {
+            "stock_code": stock_code,
+            "oprc_vrss_rate": oprc_vrss_rate,
+            "higher_price": high,
+            "lowest_price": low
+        }
+        redis_client.publish("oprc_vrss_updates", json.dumps(home_msg))
     else:
         pass
         # 메시지가 0으로 시작하지 않으면 (예: 성공/실패 JSON 응답) 내용 출력
