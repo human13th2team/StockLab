@@ -240,44 +240,39 @@
 
     <!-- 상단 네비게이션 -->
     <header class="bg-gray-900 border-b border-gray-700 shadow-lg">
-        <nav class="max-w-screen-2xl mx-auto px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-6">
+        <nav class="max-w-screen-2xl mx-auto px-4 md:px-6 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-4 md:space-x-6">
                 <a href="/" class="text-xl font-bold text-white tracking-tight">StockLab</a>
-                <span class="text-gray-500">|</span>
-                <span id="nav-stock-name" class="text-white font-semibold text-lg">{{ stock_name }}</span>
-                <span id="nav-ticker" class="text-gray-400 text-sm">{{ ticker }}</span>
+                <span class="hidden md:inline text-gray-500">|</span>
+                <div class="flex flex-col md:flex-row md:items-center md:space-x-2">
+                    <span id="nav-stock-name" class="text-white font-semibold text-base md:text-lg leading-tight">{{ stock_name }}</span>
+                    <span id="nav-ticker" class="text-gray-400 text-[10px] md:text-sm">{{ ticker }}</span>
+                </div>
             </div>
 
             <!-- 종목 검색 바 -->
-            <div class="relative w-72">
+            <div class="relative w-full md:w-64 order-last md:order-none">
                 <input type="text" id="stock-search" placeholder="🔍 종목명 또는 코드 검색..."
                     class="w-full px-4 py-2 text-sm rounded-lg" autocomplete="off"
                     style="color: white; background: #0f3460; border: 1px solid #1e4d8c;">
                 <div id="search-results" class="search-results"></div>
             </div>
 
-            <div class="flex items-center space-x-6">
-                <!-- 사용자 정보 표시부 -->
-                <div class="flex flex-col items-end mr-4">
+            <div class="flex items-center space-x-4 md:space-x-6 ml-auto md:ml-0">
+                <!-- 사용자 정보 표시부 (모바일에서는 일부 상세 정보 숨김 가능) -->
+                <div class="flex flex-col items-end">
                     <div class="flex items-center space-x-2">
-                        <span class="text-[10px] text-gray-500">사용자</span>
-                        <span id="user-nickname"
-                            class="user-nickname-display text-sm font-bold text-blue-400">게스트</span>
+                        <span id="user-nickname" class="user-nickname-display text-xs md:text-sm font-bold text-blue-400">게스트</span>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <span class="text-[10px] text-gray-500">가용현금</span>
-                        <span id="user-cash" class="user-cash-display text-sm font-bold text-green-400">0원</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-[10px] text-gray-400">주문중(동결)</span>
-                        <span id="user-deposit"
-                            class="user-deposit-display text-sm font-semibold text-orange-300">0원</span>
+                        <span id="user-cash" class="user-cash-display text-xs md:text-sm font-bold text-green-400">0원</span>
                     </div>
                 </div>
-                <a href="/" class="text-gray-400 hover:text-white text-sm transition-colors">← 대시보드</a>
-                <span id="nav-current-price" class="text-2xl font-bold">{{ "{:,.0f}".format(price_data.current) if
-                    price_data else '0' }}</span>
-                <span id="nav-change-rate" class="text-sm font-medium">-</span>
+                <div class="flex flex-col items-end border-l border-gray-700 pl-4">
+                    <span id="nav-current-price" class="text-lg md:text-2xl font-bold leading-none">{{ "{:,.0f}".format(price_data.current) if
+                        price_data else '0' }}</span>
+                    <span id="nav-change-rate" class="text-[10px] md:text-sm font-medium">-</span>
+                </div>
             </div>
         </nav>
     </header>
