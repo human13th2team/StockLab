@@ -14,14 +14,14 @@ from langchain_core.output_parsers import StrOutputParser
 from app.extensions import db
 from app.models.user import User
 from app.models.holding import Holding
-from app.models.stock import StockDailyData
+from app.models import StockDailyData
 
 # --- 로거 전역 설정 (FundingService 용) ---
 funding_logger = logging.getLogger("weekly_funding")
 if not funding_logger.handlers:
     log_path = os.path.join(os.path.dirname(__file__), "funding.log")
     handler = logging.FileHandler(log_path)
-    handler.set_formatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     funding_logger.addHandler(handler)
     funding_logger.setLevel(logging.INFO)
 
