@@ -9,12 +9,26 @@ def search_stocks():
     if not query:
         return jsonify([])
     
-    # DB에서 이름 또는 코드로 검색
+    # 1. DB 우선 검색
     stocks = Stock.query.filter(
         (Stock.name.contains(query)) | (Stock.ticker_code.contains(query))
     ).limit(10).all()
     
-    return jsonify([{"ticker_code": s.ticker_code, "name": s.name} for s in stocks])
+    db_results = [{"ticker_code": s.ticker_code, "name": s.name} for s in stocks]
+    
+    # 2. 만약 결과가 5개 미만이면 CSV에서 추가로 검색하여 보완
+    if len(db_results) < 5:
+        from app.api_clients.rest_api.stock_info_service import StockInfoService
+        csv_results = StockInfoService.search_all_csv(query)
+        
+        # 중복 제거 (ticker_code 기준)
+        existing_codes = {r['ticker_code'] for r in db_results}
+        for res in csv_results:
+            if res['ticker_code'] not in existing_codes:
+                db_results.append(res)
+                if len(db_results) >= 10: break
+    
+    return jsonify(db_results)
 
 @market_bp.route('/quote/<ticker_code>', methods=['GET'])
 def get_quote(ticker_code):
@@ -28,5 +42,6 @@ def get_orderbook(ticker_code):
 
 @market_bp.route('/history/<ticker_code>', methods=['GET'])
 def get_history(ticker_code):
-    # 나중에 실제 KIS API의 히스토리 조회로 연결
-    return jsonify({"ticker_code": ticker_code, "price_at_date": 70000})
+    interval = request.args.get('interval', '1')
+    data, status = MarketDataService.get_stock_history(ticker_code, interval)
+    return jsonify(data), status

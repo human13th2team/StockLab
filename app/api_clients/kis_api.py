@@ -12,7 +12,7 @@ class KisApi:
     def __init__(self):
         self.app_key = os.getenv('KIS_APP_KEY')
         self.app_secret = os.getenv('KIS_APP_SECRET')
-        self.base_url = os.getenv('IMMINATION_DOMAIN')
+        self.base_url = os.getenv('IMMITATION_DOMAIN')
         self.token = None
         self.redis = init_redis()
 

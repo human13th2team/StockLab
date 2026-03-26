@@ -37,8 +37,9 @@ def get_approval_key():
 
     header_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestBody())
+    base_url = os.getenv('IMMITATION_DOMAIN', 'https://openapivts.koreainvestment.com:29443')
     res = requests.post(
-        "https://openapivts.koreainvestment.com:29443/oauth2/Approval",
+        f"{base_url}/oauth2/Approval",
         headers=header_dict,
         json=body_dict
     )
@@ -67,8 +68,9 @@ def get_access_token():
     header_dict = dataclasses.asdict(kis_auth_dto.AccessRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.AccessRequestBody())
 
+    base_url = os.getenv('IMMITATION_DOMAIN', 'https://openapivts.koreainvestment.com:29443')
     res = requests.post(
-        "https://openapivts.koreainvestment.com:29443/oauth2/tokenP",
+        f"{base_url}/oauth2/tokenP",
         headers=header_dict,
         json=body_dict
     )

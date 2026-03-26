@@ -8,19 +8,19 @@ from app.models.stock import Stock
 
 @scheduler.task('interval', id='renewal_redis', seconds=80000, next_run_time=datetime.now())
 def renewal_redis():
-    print("⏳ Interval Scheduling: renewal_redis")
+    print("[Schedule] Interval: renewal_redis")
     is_token_valid = auth_to_redis.is_access_token_ttl_valid()
     is_key_valid = auth_to_redis.is_approval_key_ttl_valid()
     if not is_token_valid:
         get_access_token()
-        print("⏰ RENEW redis access_token by scheculer")
+        print("[RENEW] access_token")
     if not is_key_valid:
         get_approval_key()
-        print("⏰ RENEW redis approval_key by scheculer")
+        print("[RENEW] approval_key")
 
 @scheduler.task('cron', id='get_daily_stock_data', hour='15', minute='31')
 def get_daily_stock_data():
-    print("⏳ Interval Schedule: get_daily_stock_data")
+    print("[Schedule] Cron: get_daily_stock_data")
     #저장 로직 Stock에 저장된 모든 ticker_code 대해 일별 시세 데이터 저장
     with scheduler.app.app_context():
         all_stocks = Stock.query.with_entities(Stock.ticker_code).all()

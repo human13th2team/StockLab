@@ -4,11 +4,9 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from config import config_by_name
 
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
+# Extensions are imported from app.extensions below
 
-from app.extensions import db, migrate, scheduler
+from app.extensions import db, migrate, scheduler, jwt
 from config import config_by_name
 
 def create_app(config_name='dev'):

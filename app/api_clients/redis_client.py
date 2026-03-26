@@ -15,5 +15,5 @@ load_dotenv()
 def init_redis():
     host = os.getenv('REDIS_HOST', '127.0.0.1')
     port = int(os.getenv('REDIS_PORT', 6379))
-    r = redis.Redis(host=host, port=port)
+    r = redis.Redis(host=host, port=port, decode_responses=True)
     return r
