@@ -2,12 +2,31 @@ import time
 
 from flask import Flask
 from app.extensions import db, migrate, scheduler, jwt
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
+from config import config_by_name
+
+db = SQLAlchemy()
+migrate = Migrate()
+jwt = JWTManager()
+
+from app.extensions import db, migrate, scheduler
 from config import config_by_name
 
 def create_app(config_name='dev'):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
-
+    
+    # DB, Migrate, JWT 초기화
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    
+    # SocketIO 초기화
+    from app.extensions import socketio
+    socketio.init_app(app)
+    
     # Redis 초기화
     from app.extensions import redis_client
     redis_client.connection_pool.connection_kwargs.update({
@@ -64,5 +83,13 @@ def create_app(config_name='dev'):
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(home_bp, url_prefix='/api/home')
     app.register_blueprint(main_bp)
+    
+    # 스케줄러 초기화 및 시작 (app.services.admin_service 누락으로 인한 임시 비활성화)
+    # from apscheduler.schedulers.background import BackgroundScheduler
+    # from app.services.admin_service import AdminService
+    
+    # scheduler = BackgroundScheduler()
+    # scheduler.add_job(func=AdminService.weekly_funding_job, trigger="cron", day_of_week="mon", hour=9)
+    # scheduler.start()
     
     return app

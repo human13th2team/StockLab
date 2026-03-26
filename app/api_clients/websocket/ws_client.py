@@ -12,6 +12,7 @@ from app.extensions import redis_client
 from app.api_clients.auth.auth_to_redis import get_approval_key_from_redis
 
 from app.api_clients.websocket import ws_domestic_dto
+from app.api_clients.redis_client import init_redis
 load_dotenv()
 
 #MKSC_SHRN_ISCD: str  #유가증권 단축 종목코드

@@ -1,40 +1,43 @@
-from app.extensions import db, scheduler, redis_client
+from app.extensions import db, scheduler, redis_client, socketio
 from app.features.execution.services import ExecutionService
 from app.models.order import Order, OrderStatus
 import json
 import threading
 
-def handle_price_update(message):
-    """Redis로부터 수신한 가격 데이터를 처리하는 콜백 함수"""
+def process_message(app, message):
+    """메시지를 받아서 DB 처리 및 Socket.IO 전송"""
     try:
-        # 데이터 형식 예: {"ticker_code": "005930", "current_price": 75000}
         data = json.loads(message['data'])
         ticker_code = data.get('ticker_code')
         current_price = data.get('current_price')
         
         if ticker_code and current_price:
             print(f"📈 [Redis Worker] 실시간 시세 수신: {ticker_code} -> {current_price}")
-            # Flask App Context 내에서 실행
-            from flask import current_app
-            with current_app.app_context():
+            
+            with app.app_context():
+                # 1. 미체결 주문 체결 체크
                 ExecutionService.check_and_execute_orders(ticker_code, current_price)
+                
+                # 2. 모든 클라이언트에게 실시간 시세 브로드캐스트
+                socketio.emit('price_update', {
+                    'ticker_code': ticker_code,
+                    'price': current_price
+                })
+                print(f"📣 [SocketIO] Broadcasted price: {ticker_code} -> {current_price}")
     except Exception as e:
         print(f"[Redis Worker] Error processing message: {e}")
 
 def start_redis_listener(app):
     """Redis Pub/Sub 리스너를 별도 스레드에서 시작"""
     def run_listener():
-        with app.app_context():
-            print("[Redis Worker] 실시간 시세 구독 시작 (channel: price_updates)")
-            pubsub = redis_client.pubsub()
-            pubsub.subscribe(**{'price_updates': handle_price_update})
-            
-            # listen()은 블로킹 호출이므로 무한 루프
-            for message in pubsub.listen():
-                if message['type'] == 'message':
-                    # handle_price_update가 이미 콜백으로 등록되어 있음
-                    pass
+        print("[Redis Worker] 실시간 시세 구독 시작 (channel: price_updates)")
+        pubsub = redis_client.pubsub()
+        pubsub.subscribe('price_updates')
+        
+        # listen() 루프에서 직접 처리하여 컨텍스트 유실 방지
+        for message in pubsub.listen():
+            if message['type'] == 'message':
+                process_message(app, message)
 
     thread = threading.Thread(target=run_listener, daemon=True)
     thread.start()
-

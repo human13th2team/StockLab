@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockLab - 트레이딩</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+        }
+
+        .card {
+            background-color: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 12px;
+        }
+
+        .btn-buy {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .btn-sell {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .btn-buy:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .btn-sell:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        .price-up {
+            color: #ef4444;
+        }
+
+        .price-down {
+            color: #3b82f6;
+        }
+
+        .orderbook-row {
+            transition: background 0.15s;
+        }
+
+        .orderbook-row:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .tab-btn-sell.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            background-color: #0f3460;
+            border: 1px solid #1e4d8c;
+            color: #e0e0e0;
+            border-radius: 6px;
+            padding: 8px 12px;
+            width: 100%;
+            outline: none;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+        }
+
+        #search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 0 0 8px 8px;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .search-result-item:hover {
+            background: #0f3460;
+        }
+
+        #chart-container {
+            width: 100%;
+            height: 340px;
+        }
+
+        .interval-btn {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border: 1px solid #0f3460;
+            color: #a0aec0;
+            transition: all 0.15s;
+        }
+
+        .interval-btn.active,
+        .interval-btn:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        .price-protect-notice {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #fca5a5;
+            margin-top: 6px;
+        }
+
+        /* ── 미체결 주문 패널 ── */
+        .pending-order-item {
+            background: rgba(15, 52, 96, 0.5);
+            border: 1px solid #1e4d8c;
+            border-radius: 8px;
+            padding: 10px 12px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+
+        .pending-order-item:hover {
+            border-color: #3b82f6;
+        }
+
+        .timer-bar-bg {
+            height: 4px;
+            background: #1e4d8c;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .timer-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s linear, background-color 0.5s;
+        }
+
+        .timer-text {
+            font-size: 0.72rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .cancel-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            border-radius: 5px;
+            padding: 2px 9px;
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .cancel-btn:hover {
+            background: rgba(239, 68, 68, 0.45);
+            color: white;
+        }
+
+        @keyframes pulse-warn {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .warn-pulse {
+            animation: pulse-warn 1s infinite;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+    <!-- 상단 네비게이션 -->
+    <header class="bg-gray-900 border-b border-gray-700 shadow-lg">
+        <nav class="max-w-screen-2xl mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-6">
+                <a href="/" class="text-xl font-bold text-white tracking-tight">StockLab</a>
+                <span class="text-gray-500">|</span>
+                <span id="nav-stock-name" class="text-white font-semibold text-lg">{{ stock_name }}</span>
+                <span id="nav-ticker" class="text-gray-400 text-sm">{{ ticker }}</span>
+            </div>
+
+            <!-- 종목 검색 바 -->
+            <div class="relative w-72">
+                <input type="text" id="stock-search" placeholder="🔍 종목명 또는 코드 검색..."
+                    class="w-full px-4 py-2 text-sm rounded-lg" autocomplete="off">
+                <div id="search-results" class="hidden"></div>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <!-- 사용자 정보 표시부 -->
+                <div class="flex flex-col items-end mr-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-gray-500">사용자</span>
+                        <span id="user-nickname" class="user-nickname-display text-sm font-bold text-blue-400">게스트</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-gray-500">예수금</span>
+                        <span id="user-cash" class="user-cash-display text-sm font-bold text-green-400">0원</span>
+                    </div>
+                </div>
+                <a href="/" class="text-gray-400 hover:text-white text-sm transition-colors">← 대시보드</a>
+                <span id="nav-current-price" class="text-2xl font-bold price-up">75,000</span>
+                <span id="nav-change-rate" class="text-sm price-up font-medium">▲ +1.2%</span>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="max-w-screen-2xl mx-auto px-6 py-5 grid grid-cols-12 gap-5">
+
+        <!-- 왼쪽: 차트 + 종목 정보 (8 cols) -->
+        <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
+
+            <!-- 종목 헤더 정보 -->
+            <div class="card p-4 flex items-center justify-between">
+                <div>
+                    <h1 id="stock-name-header" class="text-xl font-bold text-white">{{ stock_name }}</h1>
+                    <p id="ticker-code-header" class="text-xs text-gray-400 mt-0.5">KRX: {{ ticker }}</p>
+                </div>
+                <div class="text-right">
+                    <div class="flex items-center justify-end space-x-2">
+                        <span id="live-indicator" class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <p id="current-price-display" class="text-3xl font-extrabold price-up">75,000</p>
+                    </div>
+                    <p id="price-change-display" class="text-sm font-medium text-red-400">+1,500 (+2.04%)</p>
+                    <div class="flex items-center justify-end space-x-2 mt-1">
+                        <span id="socket-status-dot" class="h-1.5 w-1.5 rounded-full bg-gray-500 shadow-[0_0_5px_rgba(0,0,0,0.5)]"></span>
+                        <p id="socket-status-text" class="text-[10px] text-gray-500">연결 확인 중...</p>
+                    </div>
+                    <p id="last-updated-time" class="text-[10px] text-gray-500 mt-1">최근 갱신: --:--:--</p>
+                </div>
+                <div class="grid grid-cols-3 gap-4 text-center text-sm">
+                    <div>
+                        <p class="text-gray-500 text-xs">시가</p>
+                        <p id="open-price" class="text-white font-medium">74,100</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-xs">고가</p>
+                        <p id="high-price" class="price-up font-medium">75,800</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-xs">저가</p>
+                        <p id="low-price" class="price-down font-medium">73,900</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-gray-500 text-xs">거래량</p>
+                    <p id="volume-display" class="text-white font-medium">12,840,300</p>
+                </div>
+            </div>
+
+            <!-- 캔들 차트 -->
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-gray-300">실시간 차트</h2>
+                    <div class="flex space-x-2">
+                        <button class="interval-btn active" onclick="setInterval_('1m')">1분</button>
+                        <button class="interval-btn" onclick="setInterval_('5m')">5분</button>
+                        <button class="interval-btn" onclick="setInterval_('1d')">일봉</button>
+                    </div>
+                </div>
+                <div id="chart-container"></div>
+            </div>
+
+            <!-- 나의 보유 주식 현황 -->
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-4 border-b border-gray-800 pb-3">
+                    <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
+                        <span class="p-1 bg-blue-500/20 rounded">💰</span> 나의 보유 주식
+                    </h2>
+                    <button onclick="fetchHoldings()" class="text-[10px] text-blue-400 hover:text-blue-300 transition-colors bg-blue-400/10 px-2 py-1 rounded">새로고침 ↻</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-gray-500 font-medium">
+                                <th class="pb-3 text-left">종목</th>
+                                <th class="pb-3 text-right">보유수량</th>
+                                <th class="pb-3 text-right">평단가</th>
+                                <th class="pb-3 text-right">현재가</th>
+                                <th class="pb-3 text-right">수익률</th>
+                                <th class="pb-3 text-right">평가손익</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdings-list">
+                            <!-- JS로 렌더링 -->
+                            <tr>
+                                <td colspan="6" class="py-12 text-center text-gray-600 bg-gray-900/10 rounded-lg">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <span class="text-2xl text-gray-800">📦</span>
+                                        보유한 주식이 없습니다.
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 호가창 + 주문 폼 (4 cols) -->
+        <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
+
+            <!-- 호가창 -->
+            <div class="card p-4">
+                <h2 class="text-sm font-semibold text-gray-300 mb-3">호가창</h2>
+                <div id="orderbook" class="text-xs space-y-0.5">
+                    <!-- JS로 동적 생성 -->
+                </div>
+            </div>
+
+            <!-- 주문 폼 -->
+            <div class="card p-4">
+                <!-- 매수/매도 탭 -->
+                <div class="flex rounded-lg overflow-hidden border border-gray-700 mb-4">
+                    <button id="tab-buy" class="tab-btn active flex-1 py-2 text-sm font-bold transition-all"
+                        onclick="switchTab('buy')">매수</button>
+                    <button id="tab-sell"
+                        class="tab-btn-sell flex-1 py-2 text-sm font-bold text-gray-400 transition-all"
+                        onclick="switchTab('sell')">매도</button>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- 주문 구분 -->
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">주문 구분</label>
+                        <select id="order-type" class="w-full rounded-lg px-3 py-2 text-sm"
+                            style="background:#0f3460;border:1px solid #1e4d8c;color:#e0e0e0;">
+                            <option value="limit">지정가</option>
+                            <option value="market">시장가</option>
+                        </select>
+                    </div>
+
+                    <!-- 주문 가격 -->
+                    <div id="price-field">
+                        <label class="text-xs text-gray-500 block mb-1">주문 가격 (원)</label>
+                        <input type="number" id="order-price" placeholder="0" value="75000" min="0" step="100">
+                        <div id="price-protect-notice" class="price-protect-notice">
+                            ⚠️ 현재가 보호: 시장가로 즉시 체결됩니다.
+                        </div>
+                    </div>
+
+                    <!-- 주문 수량 -->
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">주문 수량 (주)</label>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="changeQty(-1)"
+                                class="px-3 py-2 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors">－</button>
+                            <input type="number" id="order-qty" value="1" min="1" class="text-center">
+                            <button onclick="changeQty(1)"
+                                class="px-3 py-2 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition-colors">＋</button>
+                        </div>
+                    </div>
+
+                    <!-- 예상 체결금액 -->
+                    <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
+                        <span class="text-xs text-gray-400">예상 체결금액</span>
+                        <span id="total-amount" class="text-white font-bold">75,000 원</span>
+                    </div>
+
+                    <!-- 주문 버튼 -->
+                    <button id="order-btn" onclick="placeOrder()"
+                        class="btn-buy w-full py-3 text-white font-bold rounded-xl text-sm transition-all shadow-lg hover:shadow-xl hover:scale-[1.01]">
+                        매수 주문
+                    </button>
+                </div>
+            </div>
+
+            <!-- 알림 영역 -->
+            <div id="order-alert" class="hidden card p-3 text-sm text-center"></div>
+        </div>
+    </div>
+
+    <!-- ── 미체결 주문 패널 (하단 전체 폭) ── -->
+    <div class="max-w-screen-2xl mx-auto px-6 pb-8">
+        <div class="card p-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-sm font-semibold text-gray-300">⏳ 미체결 주문</h2>
+                    <span id="pending-count-badge"
+                        class="hidden bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                </div>
+                <span class="text-xs text-gray-500">30분 내 미체결 시 자동 취소 및 금액 환불</span>
+            </div>
+            <div id="pending-orders-list">
+                <p class="text-gray-600 text-xs text-center py-4">미체결 주문이 없습니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── 전역 상태 ────────────────────────────────────────────────
+        let currentTicker = '{{ ticker }}';
+        let currentStockName = '{{ stock_name }}';
+        let currentPrice = 0;
+        let currentTab = 'buy';
+        let currentInterval = '1m';
+        let chart, candleSeries;
+        let chartUpdateTimer = null;
+
+
+        // Socket.IO 연결 (명시적으로 현재 포트 지정)
+        const socketPath = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port;
+        console.log('🔌 [Socket.IO] Attempting connection to:', socketPath);
+        
+        const socket = io(socketPath, {
+            path: '/socket.io',
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 10
+        });
+
+        socket.on('connect', () => {
+            console.log('✅ [Socket.IO] Connected! ID:', socket.id);
+            const indicator = document.getElementById('live-indicator');
+            if (indicator) {
+                indicator.className = 'flex h-2 w-2 rounded-full bg-green-500 animate-pulse';
+            }
+            const statusTxt = document.getElementById('socket-status-text');
+            const statusDot = document.getElementById('socket-status-dot');
+            if (statusTxt) {
+                statusTxt.textContent = '실시간 연결됨';
+                statusTxt.className = 'text-[10px] text-green-500 font-medium';
+            }
+            if (statusDot) {
+                statusDot.className = 'h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#10b981] animate-pulse';
+            }
+        });
+
+        socket.on('heartbeat', (data) => {
+            console.warn('💓 [Socket.IO] Heartbeat received:', data.time);
+        });
+
+        socket.on('disconnect', () => {
+            console.error('❌ [Socket.IO] Disconnected!');
+            const indicator = document.getElementById('live-indicator');
+            if (indicator) indicator.className = 'flex h-2 w-2 rounded-full bg-red-500';
+            
+            const statusTxt = document.getElementById('socket-status-text');
+            const statusDot = document.getElementById('socket-status-dot');
+            if (statusTxt) {
+                statusTxt.textContent = '연결 끊김 (재시도 중)';
+                statusTxt.className = 'text-[10px] text-red-500 font-medium';
+            }
+            if (statusDot) {
+                statusDot.className = 'h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]';
+            }
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('💥 [Socket.IO] Connection Error:', error);
+        });
+
+        socket.on('price_update', (data) => {
+            try {
+                // 수신 로그 (브라우저 콘솔에서 확인 가능)
+                console.log(`📡 [REAL-TIME] ${data.ticker_code}: ${data.price.toLocaleString()}원`);
+                
+                if (data.ticker_code === currentTicker) {
+                    updateCurrentPrice(data.price);
+                    
+                    // 시각적 피드백: 가격 엘리먼트 번쩍임 효과
+                    const priceEls = ['nav-current-price', 'current-price-display'];
+                    priceEls.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.style.transition = 'none';
+                            el.style.opacity = '0.5';
+                            setTimeout(() => {
+                                el.style.transition = 'opacity 0.3s';
+                                el.style.opacity = '1';
+                            }, 50);
+                        }
+                    });
+
+                    // 차트 마지막 캔들 업데이트
+                    const chartData = candleSeries.getData();
+                    if (chartData.length > 0) {
+                        const lastBar = chartData[chartData.length - 1];
+                        candleSeries.update({
+                            ...lastBar,
+                            close: data.price,
+                            high: Math.max(lastBar.high, data.price),
+                            low: Math.min(lastBar.low, data.price)
+                        });
+                    }
+                }
+
+                // 보유 주가 수익률 실시간 반영
+                if (typeof renderHoldings === 'function') {
+                    renderHoldings();
+                }
+            } catch (e) {
+                console.error('시세 수신 처리 중 오류:', e);
+            }
+        });
+
+        // ─── 종목 데이터 (Dynamic Fetching) ───────────────────────────────
+        let stockInfoCache = {};
+
+        async function fetchCurrentData(ticker) {
+            try {
+                const res = await fetch(`/api/stocks/quote/${ticker}`);
+                if (!res.ok) throw new Error('데이터를 불러올 수 없습니다.');
+                const data = await res.json();
+                
+                // KIS API 필드 -> 전역 상태 업데이트 (안전한 파싱)
+                currentPrice = parseInt(data.stck_prpr) || 0;
+                const openPri = parseInt(data.stck_oprc) || 0;
+                const highPri = parseInt(data.stck_hgpr) || 0;
+                const lowPri = parseInt(data.stck_lwpr) || 0;
+                const vol = parseInt(data.acml_vol) || 0;
+                const change = parseInt(data.prdy_vrss) || 0;
+                const rate = parseFloat(data.prdy_ctrt) || 0.0;
+
+                // UI 업데이트
+                if (document.getElementById('open-price')) document.getElementById('open-price').textContent = openPri.toLocaleString();
+                if (document.getElementById('high-price')) document.getElementById('high-price').textContent = highPri.toLocaleString();
+                if (document.getElementById('low-price')) document.getElementById('low-price').textContent = lowPri.toLocaleString();
+                if (document.getElementById('volume-display')) document.getElementById('volume-display').textContent = vol.toLocaleString();
+                
+                // 전일 종가 계산 및 캐시 (실시간 업데이트시 변동률 계산용)
+                stockInfoCache[ticker] = {
+                    basePrice: currentPrice - change
+                };
+
+                updateCurrentPrice(currentPrice, change, rate);
+                
+                return data;
+            } catch (e) {
+                console.error('❌ 시세 조회 오류:', e);
+                return null;
+            }
+        }
+
+        // ─── 차트 초기화 ──────────────────────────────────────────────
+        function initChart() {
+            const container = document.getElementById('chart-container');
+            chart = LightweightCharts.createChart(container, {
+                width: container.clientWidth,
+                height: 340,
+                layout: { background: { color: '#16213e' }, textColor: '#a0aec0' },
+                grid: { vertLines: { color: '#0f3460' }, horzLines: { color: '#0f3460' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: '#0f3460' },
+                timeScale: { borderColor: '#0f3460', timeVisible: true, secondsVisible: false },
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#ef4444',
+                downColor: '#3b82f6',
+                borderUpColor: '#ef4444',
+                borderDownColor: '#3b82f6',
+                wickUpColor: '#ef4444',
+                wickDownColor: '#3b82f6',
+            });
+
+            loadChartData();
+
+            window.addEventListener('resize', () => {
+                chart.applyOptions({ width: container.clientWidth });
+            });
+        }
+
+        function generateCandleData(basePrice, count, intervalMinutes) {
+            const data = [];
+            let price = basePrice * (0.95 + Math.random() * 0.05);
+            const now = Math.floor(Date.now() / 1000);
+            const step = intervalMinutes * 60;
+
+            for (let i = count; i >= 0; i--) {
+                const time = now - i * step;
+                const open = price;
+                const change = (Math.random() - 0.48) * basePrice * 0.015;
+                const close = Math.max(open + change, basePrice * 0.5);
+                const high = Math.max(open, close) + Math.random() * basePrice * 0.005;
+                const low = Math.min(open, close) - Math.random() * basePrice * 0.005;
+                data.push({ time, open: Math.round(open), high: Math.round(high), low: Math.round(low), close: Math.round(close) });
+                price = close;
+            }
+            return data;
+        }
+
+        async function loadChartData() {
+            if (chartUpdateTimer) clearInterval(chartUpdateTimer);
+
+            const intervalMap = { '1m': 1, '5m': 5, '1d': 1440 };
+            const minutes = intervalMap[currentInterval] || 1;
+            const count = currentInterval === '1d' ? 90 : 60;
+
+            // 실시간 현재가 먼저 가져오기
+            await fetchCurrentData(currentTicker);
+
+            const data = generateCandleData(currentPrice, count, minutes);
+            candleSeries.setData(data);
+            chart.timeScale().fitContent();
+
+            // 실시간 업데이트는 Socket.IO로 처리하므로 타이머 제거
+            /*
+            chartUpdateTimer = setInterval(() => {
+                const lastBar = data[data.length - 1];
+                const newClose = Math.round(lastBar.close * (1 + (Math.random() - 0.49) * 0.003));
+                const newHigh = Math.max(lastBar.high, newClose);
+                const newLow = Math.min(lastBar.low, newClose);
+                const updated = { ...lastBar, close: newClose, high: newHigh, low: newLow };
+                data[data.length - 1] = updated;
+                candleSeries.update(updated);
+                updateCurrentPrice(newClose);
+            }, 5000);
+            */
+        }
+
+        function setInterval_(iv) {
+            currentInterval = iv;
+            document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            loadChartData();
+        }
+
+        // ─── 현재가 업데이트 ──────────────────────────────────────────
+        function updateCurrentPrice(price, changeArg, rateArg) {
+            const prev = currentPrice;
+            currentPrice = price;
+            
+            // 인자가 있으면 그것을 쓰고, 없으면 (Socket.IO 등에서) 계산
+            const change = changeArg !== undefined ? changeArg : (price - (stockInfoCache[currentTicker]?.basePrice || price));
+            const rate = rateArg !== undefined ? rateArg : ((change / (stockInfoCache[currentTicker]?.basePrice || price)) * 100).toFixed(2);
+
+            const direction = change >= 0 ? '▲' : '▼';
+            const cls = change >= 0 ? 'price-up' : 'price-down';
+
+            const formatted = price.toLocaleString();
+            
+            // 메인 가격 업데이트
+            ['nav-current-price', 'current-price-display'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = formatted;
+                    el.className = el.className.replace(/price-(up|down)/g, '') + ' ' + cls;
+                }
+            });
+
+            // 변동폭/변동률 업데이트 (ID 수정: price-change-display)
+            const changeText = `${direction} ${change >= 0 ? '+' : ''}${change.toLocaleString()}원 (${change >= 0 ? '+' : ''}${rate}%)`;
+            ['nav-change-rate', 'price-change-display'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === 'nav-change-rate') {
+                        el.textContent = `${direction} ${change >= 0 ? '+' : ''}${rate}%`;
+                    } else {
+                        el.textContent = changeText;
+                    }
+                    el.className = el.className.replace(/price-(up|down)/g, '') + ' ' + cls;
+                }
+            });
+
+            // 최근 갱신 시간 업데이트
+            const timeEl = document.getElementById('last-updated-time');
+            if (timeEl) {
+                const now = new Date();
+                timeEl.textContent = `최근 갱신: ${now.toLocaleTimeString()}`;
+            }
+
+            console.log(`✅ [UI Update] ${currentTicker}: ${formatted}`);
+
+            checkPriceProtection();
+            updateTotalAmount();
+            renderOrderBook();
+        }
+
+        // ─── 호가창 렌더링 ────────────────────────────────────────────
+        function renderOrderBook() {
+            const ob = document.getElementById('orderbook');
+            const spread = currentPrice * 0.003;
+            let html = '';
+
+            // 매도 호가 (위 5단계)
+            for (let i = 5; i >= 1; i--) {
+                const price = Math.round((currentPrice + spread * i) / 100) * 100;
+                const qty = Math.floor(Math.random() * 8000 + 500);
+                const barW = Math.min(qty / 100, 80);
+                html += `<div class="orderbook-row flex items-center justify-between py-0.5 px-1 rounded">
+                <span class="text-blue-400 font-medium w-24 text-right">${price.toLocaleString()}</span>
+                <div class="flex-1 mx-2 h-4 rounded-sm overflow-hidden" style="background:rgba(59,130,246,0.1)">
+                    <div style="width:${barW}%;height:100%;background:rgba(59,130,246,0.35);float:right;"></div>
+                </div>
+                <span class="text-gray-400 w-16 text-right">${qty.toLocaleString()}</span>
+            </div>`;
+            }
+
+            // 현재가 구분선
+            html += `<div class="my-1 py-1 px-1 bg-gray-800 rounded flex justify-between items-center">
+            <span class="text-xs text-gray-400">현재가</span>
+            <span class="font-bold text-white">${currentPrice.toLocaleString()}</span>
+            <span class="text-xs text-gray-400">체결</span>
+        </div>`;
+
+            // 매수 호가 (아래 5단계)
+            for (let i = 1; i <= 5; i++) {
+                const price = Math.round((currentPrice - spread * i) / 100) * 100;
+                const qty = Math.floor(Math.random() * 8000 + 500);
+                const barW = Math.min(qty / 100, 80);
+                html += `<div class="orderbook-row flex items-center justify-between py-0.5 px-1 rounded cursor-pointer" onclick="setOrderPrice(${price})">
+                <span class="text-red-400 font-medium w-24 text-right">${price.toLocaleString()}</span>
+                <div class="flex-1 mx-2 h-4 rounded-sm overflow-hidden" style="background:rgba(239,68,68,0.1)">
+                    <div style="width:${barW}%;height:100%;background:rgba(239,68,68,0.35);"></div>
+                </div>
+                <span class="text-gray-400 w-16 text-right">${qty.toLocaleString()}</span>
+            </div>`;
+            }
+
+            ob.innerHTML = html;
+        }
+
+        function setOrderPrice(price) {
+            document.getElementById('order-price').value = price;
+            checkPriceProtection();
+            updateTotalAmount();
+        }
+
+        // ─── 가격 보호 로직 ───────────────────────────────────────────
+        function checkPriceProtection() {
+            const orderPrice = parseInt(document.getElementById('order-price').value) || 0;
+            const notice = document.getElementById('price-protect-notice');
+            const isBuy = currentTab === 'buy';
+
+            // 매수 시 주문가 > 현재가, 매도 시 주문가 < 현재가
+            const triggered = (isBuy && orderPrice > currentPrice) || (!isBuy && orderPrice < currentPrice && orderPrice > 0);
+            notice.style.display = triggered ? 'block' : 'none';
+            if (triggered) {
+                notice.textContent = `⚠️ 가격 보호: ${isBuy ? '현재가보다 비싸게 매수' : '현재가보다 싸게 매도'} → 시장가(${currentPrice.toLocaleString()}원)로 즉시 체결`;
+            }
+        }
+
+        // ─── 주문 탭 전환 ─────────────────────────────────────────────
+        function switchTab(tab) {
+            currentTab = tab;
+            const buyTab = document.getElementById('tab-buy');
+            const sellTab = document.getElementById('tab-sell');
+            const btn = document.getElementById('order-btn');
+
+            if (tab === 'buy') {
+                buyTab.classList.add('active');
+                sellTab.classList.remove('active');
+                btn.className = btn.className.replace('btn-sell', 'btn-buy');
+                btn.textContent = '매수 주문';
+            } else {
+                sellTab.classList.add('active');
+                buyTab.classList.remove('active');
+                btn.className = btn.className.replace('btn-buy', 'btn-sell');
+                btn.textContent = '매도 주문';
+            }
+            checkPriceProtection();
+        }
+
+        // ─── 수량 변경 ────────────────────────────────────────────────
+        function changeQty(delta) {
+            const input = document.getElementById('order-qty');
+            input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+            updateTotalAmount();
+        }
+
+        function updateTotalAmount() {
+            const price = parseInt(document.getElementById('order-price').value) || 0;
+            const qty = parseInt(document.getElementById('order-qty').value) || 0;
+            const effectivePrice = document.getElementById('price-protect-notice').style.display !== 'none' ? currentPrice : price;
+            document.getElementById('total-amount').textContent = (effectivePrice * qty).toLocaleString() + ' 원';
+        }
+
+        // ─── 미체결 주문 상태 (클라이언트 캐시) ─────────────────────────
+        // { orderId, ticker, type, price, qty, expiresAt(ms) }
+        let pendingOrders = [];
+        let timerInterval = null;
+
+        // ─── 주문 실행 ────────────────────────────────────────────────
+        async function placeOrder() {
+            const rawPrice = parseInt(document.getElementById('order-price').value) || currentPrice;
+            const qty = parseInt(document.getElementById('order-qty').value) || 1;
+            const orderType = document.getElementById('order-type').value;
+            const isBuy = currentTab === 'buy';
+
+            // 가격 보호 적용
+            const needsProtection = (isBuy && rawPrice > currentPrice) || (!isBuy && rawPrice < currentPrice);
+            const execPrice = (orderType === 'market' || needsProtection) ? currentPrice : rawPrice;
+
+            const payload = {
+                ticker_code: currentTicker,
+                order_type: currentTab.toUpperCase(),
+                price: execPrice,
+                quantity: qty,
+                is_market: orderType === 'market' || needsProtection
+            };
+
+            const alertEl = document.getElementById('order-alert');
+            alertEl.className = 'card p-3 text-sm text-center';
+            alertEl.style.display = 'block';
+
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    const protectMsg = needsProtection ? ' (가격 보호 적용)' : '';
+                    alertEl.textContent = `✅ ${isBuy ? '매수' : '매도'} 주문 접수! ${qty}주 × ${execPrice.toLocaleString()}원${protectMsg} — 30분 내 미체결 시 자동 취소`;
+                    alertEl.style.background = 'rgba(34,197,94,0.15)';
+                    alertEl.style.borderColor = 'rgba(34,197,94,0.4)';
+                    alertEl.style.color = '#86efac';
+
+                    // 미체결 목록에 추가
+                    addPendingOrder({
+                        orderId: data.order_id,
+                        ticker: currentTicker,
+                        stockName: currentStockName,
+                        type: currentTab.toUpperCase(),
+                        price: execPrice,
+                        qty,
+                        expiresAt: new Date(data.expires_at).getTime()
+                    });
+                } else {
+                    const errorMsg = data.error || data.message || '서버 오류';
+                    throw new Error(errorMsg);
+                }
+            } catch (e) {
+                console.error('❌ 주문 상세 오류:', e);
+                alertEl.textContent = `❌ 주문 오류: ${e.message}`;
+                alertEl.style.background = 'rgba(239, 68, 68, 0.15)';
+                alertEl.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                alertEl.style.color = '#fca5a5';
+            }
+
+            setTimeout(() => { alertEl.style.display = 'none'; }, 6000);
+        }
+
+        // ─── 미체결 주문 추가 ─────────────────────────────────────────
+        function addPendingOrder(order) {
+            pendingOrders.push(order);
+            renderPendingOrders();
+            if (!timerInterval) {
+                timerInterval = setInterval(tickTimers, 1000);
+            }
+        }
+
+        // ─── 수동 취소 요청 ───────────────────────────────────────────
+        async function cancelOrder(orderId) {
+            try {
+                const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    pendingOrders = pendingOrders.filter(o => o.orderId !== orderId);
+                    renderPendingOrders();
+                    showAlert(`🔄 주문 취소 완료! 환불: ${(data.refund_amount || 0).toLocaleString()}원`, 'green');
+                } else {
+                    showAlert(`❌ 취소 실패: ${data.message}`, 'red');
+                }
+            } catch (e) {
+                showAlert(`❌ 취소 오류: ${e.message}`, 'red');
+            }
+        }
+
+        // ─── 타이머 틱 (1초마다) ─────────────────────────────────────
+        function tickTimers() {
+            const now = Date.now();
+            let removed = false;
+            pendingOrders = pendingOrders.filter(o => {
+                if (now >= o.expiresAt) {
+                    // 만료 — UI에서 제거 (서버에서 이미 자동 취소됨)
+                    showAlert(`⏰ 주문 #${o.orderId} (${o.stockName}) 30분 만기 자동 취소 및 ${(o.price * o.qty).toLocaleString()}원 환불`, 'yellow');
+                    removed = true;
+                    return false;
+                }
+                return true;
+            });
+            if (removed) renderPendingOrders();
+            updateTimerBars();
+            if (pendingOrders.length === 0 && timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // ─── 타이머 바 업데이트 ───────────────────────────────────────
+        function updateTimerBars() {
+            const now = Date.now();
+            const THIRTY_MIN_MS = 30 * 60 * 1000;
+            pendingOrders.forEach(o => {
+                const remaining = Math.max(0, o.expiresAt - now);
+                const pct = (remaining / THIRTY_MIN_MS) * 100;
+                const fill = document.getElementById(`timer-fill-${o.orderId}`);
+                const text = document.getElementById(`timer-text-${o.orderId}`);
+                if (!fill || !text) return;
+
+                fill.style.width = `${pct}%`;
+                // 색상: 50%↑ 파랑 → 20%↑ 주황 → 20%↓ 빨강
+                fill.style.backgroundColor = pct > 50 ? '#3b82f6' : pct > 20 ? '#f59e0b' : '#ef4444';
+                if (pct <= 20) fill.classList.add('warn-pulse'); else fill.classList.remove('warn-pulse');
+
+                const secs = Math.floor(remaining / 1000);
+                const m = Math.floor(secs / 60).toString().padStart(2, '0');
+                const s = (secs % 60).toString().padStart(2, '0');
+                text.textContent = `${m}:${s} 후 자동 취소`;
+                if (pct <= 20) text.classList.add('warn-pulse', 'text-red-400'); else text.classList.remove('warn-pulse', 'text-red-400');
+            });
+        }
+
+        // ─── 미체결 주문 렌더링 ───────────────────────────────────────
+        function renderPendingOrders() {
+            const container = document.getElementById('pending-orders-list');
+            const badge = document.getElementById('pending-count-badge');
+            const count = pendingOrders.length;
+
+            badge.textContent = count;
+            if (count > 0) badge.classList.remove('hidden'); else badge.classList.add('hidden');
+
+            if (count === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-xs text-center py-4">미체결 주문이 없습니다.</p>';
+                return;
+            }
+
+            const THIRTY_MIN_MS = 30 * 60 * 1000;
+            const now = Date.now();
+            container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${pendingOrders.map(o => {
+                const isBuy = o.type === 'BUY';
+                const typeClass = isBuy ? 'text-red-400' : 'text-blue-400';
+                const typeLabel = isBuy ? '매수' : '매도';
+                const total = (o.price * o.qty).toLocaleString();
+                const remaining = Math.max(0, o.expiresAt - now);
+                const pct = (remaining / THIRTY_MIN_MS) * 100;
+                const secs = Math.floor(remaining / 1000);
+                const m = Math.floor(secs / 60).toString().padStart(2, '0');
+                const s = (secs % 60).toString().padStart(2, '0');
+                const barColor = pct > 50 ? '#3b82f6' : pct > 20 ? '#f59e0b' : '#ef4444';
+                return `
+                    <div class="pending-order-item" id="pending-item-${o.orderId}">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="${typeClass} font-bold text-sm">${typeLabel}</span>
+                                <span class="text-white font-semibold text-sm ml-1">${o.stockName}</span>
+                                <span class="text-gray-500 text-xs ml-1">${o.ticker}</span>
+                            </div>
+                            <button class="cancel-btn" onclick="cancelOrder(${o.orderId})">취소</button>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-400 mt-1.5">
+                            <span>${o.price.toLocaleString()}원 × ${o.qty}주</span>
+                            <span class="text-white font-semibold">${total}원</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-gray-500 text-xs">#${o.orderId}</span>
+                            <span class="timer-text text-gray-400" id="timer-text-${o.orderId}">${m}:${s} 후 자동 취소</span>
+                        </div>
+                        <div class="timer-bar-bg">
+                            <div class="timer-bar-fill" id="timer-fill-${o.orderId}" style="width:${pct}%;background-color:${barColor};"></div>
+                        </div>
+                    </div>`;
+            }).join('')
+                }</div>`;
+        }
+
+        // ─── 공통 알림 ────────────────────────────────────────────────
+        function showAlert(msg, color = 'green') {
+            const alertEl = document.getElementById('order-alert');
+            alertEl.className = 'card p-3 text-sm text-center';
+            alertEl.style.display = 'block';
+            const colorMap = {
+                green: ['rgba(34,197,94,0.15)', 'rgba(34,197,94,0.4)', '#86efac'],
+                red: ['rgba(239,68,68,0.15)', 'rgba(239,68,68,0.4)', '#fca5a5'],
+                yellow: ['rgba(234,179,8,0.15)', 'rgba(234,179,8,0.4)', '#fef08a'],
+            };
+            const [bg, border, textColor] = colorMap[color] || colorMap.green;
+            alertEl.style.background = bg;
+            alertEl.style.borderColor = border;
+            alertEl.style.color = textColor;
+            alertEl.textContent = msg;
+            setTimeout(() => { alertEl.style.display = 'none'; }, 7000);
+        }
+
+        // ─── 종목 검색 ────────────────────────────────────────────────
+        const searchInput = document.getElementById('stock-search');
+        const searchResults = document.getElementById('search-results');
+
+        searchInput.addEventListener('input', async function () {
+            const q = this.value.trim();
+            if (q.length < 2) { searchResults.classList.add('hidden'); return; }
+
+            try {
+                const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(q)}`);
+                const matches = await res.json();
+
+                if (matches.length === 0) {
+                    searchResults.innerHTML = '<div class="search-result-item text-gray-500">검색 결과 없음</div>';
+                } else {
+                    searchResults.innerHTML = matches.map(s => {
+                        return `<div class="search-result-item flex justify-between" onclick="switchStock('${s.ticker_code}', '${s.name}')">
+                        <span class="text-white">${s.name} <span class="text-gray-500 text-xs">${s.ticker_code}</span></span>
+                    </div>`;
+                    }).join('');
+                }
+                searchResults.classList.remove('hidden');
+            } catch (e) {
+                console.error('검색 오류:', e);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        async function switchStock(ticker, name) {
+            currentTicker = ticker;
+            if (name) currentStockName = name;
+
+            // UI 업데이트
+            document.getElementById('nav-stock-name').textContent = currentStockName;
+            document.getElementById('nav-ticker').textContent = ticker;
+            document.getElementById('stock-name-header').textContent = currentStockName;
+            document.getElementById('ticker-code-header').textContent = `KRX: ${ticker}`;
+
+            searchInput.value = '';
+            searchResults.classList.add('hidden');
+
+            // 히스토리 push (새로고침 없이 URL 변경)
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?ticker=' + ticker;
+            window.history.pushState({ path: newUrl }, '', newUrl);
+
+            await loadChartData();
+            document.getElementById('order-price').value = currentPrice;
+            updateTotalAmount();
+        }
+
+        // ─── 이벤트 바인딩 ────────────────────────────────────────────
+        document.getElementById('order-price').addEventListener('input', () => {
+            checkPriceProtection();
+            updateTotalAmount();
+        });
+        document.getElementById('order-qty').addEventListener('input', updateTotalAmount);
+        document.getElementById('order-type').addEventListener('change', function () {
+            document.getElementById('price-field').style.display = this.value === 'market' ? 'none' : 'block';
+            updateTotalAmount();
+        });
+
+        // ─── 보유 주식 로직 ───────────────────────────────────────────
+        let myHoldings = [];
+
+        async function fetchHoldings() {
+            try {
+                const res = await fetch('/api/orders/holdings');
+                if (!res.ok) return;
+                myHoldings = await res.json();
+                renderHoldings();
+            } catch (e) {
+                console.error('보유주식 조회 오류:', e);
+            }
+        }
+
+        function renderHoldings() {
+            const listEl = document.getElementById('holdings-list');
+            if (myHoldings.length === 0) {
+                listEl.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-gray-600">보유한 주식이 없습니다.</td></tr>';
+                return;
+            }
+
+            listEl.innerHTML = myHoldings.map(h => {
+                // 현재가를 전역 변수나 캐시에서 가져옴 (우선 현재 보고있는 종목이면 실시간 반영)
+                const livePrice = (h.ticker_code === currentTicker) ? currentPrice : h.avg_price; // 임시: 다른 종목은 평단가와 동일하게 표시 (추후 보완)
+                const profit = (livePrice - h.avg_price) * h.total_qty;
+                const profitRate = ((livePrice - h.avg_price) / h.avg_price * 100).toFixed(2);
+                const cls = profit >= 0 ? 'text-red-400' : 'text-blue-400';
+
+                return `
+                    <tr class="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
+                        <td class="py-3 font-medium text-white">${h.stock_name} <span class="text-[10px] text-gray-500">${h.ticker_code}</span></td>
+                        <td class="py-3 text-right text-gray-300">${h.total_qty.toLocaleString()}주</td>
+                        <td class="py-3 text-right text-gray-400">${Math.round(h.avg_price).toLocaleString()}원</td>
+                        <td class="py-3 text-right text-white font-mono">${Math.round(livePrice).toLocaleString()}원</td>
+                        <td class="py-3 text-right font-bold ${cls}">${profitRate}%</td>
+                        <td class="py-3 text-right font-bold ${cls}">${profit >= 0 ? '+' : ''}${Math.round(profit).toLocaleString()}원</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 시세 업데이트 시 보유주식 화면도 갱신
+        socket.on('price_update', (data) => {
+            if (myHoldings.some(h => h.ticker_code === data.ticker_code)) {
+                renderHoldings();
+            }
+        });
+
+        // 초기 로드 및 주기적 갱신
+        fetchHoldings();
+        setInterval(fetchHoldings, 10000); // 10초마다 서버 데이터 동기화
+
+        // ─── 유저 정보 로드 ──────────────────────────────────────────
+         async function loadUserInfo() {
+            try {
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                if (res.ok) {
+                    const cashEls = document.querySelectorAll('.user-cash-display');
+                    cashEls.forEach(el => el.textContent = data.cash.toLocaleString() + '원');
+                    const nickEls = document.querySelectorAll('.user-nickname-display');
+                    nickEls.forEach(el => el.textContent = data.nickname);
+                }
+            } catch (e) {
+                console.error('❌ 유저 정보 로드 실패:', e);
+            }
+        }
+
+        // ─── 초기화 ───────────────────────────────────────────────────
+        window.addEventListener('load', () => {
+            initChart();
+            loadUserInfo(); // 유저 정보 불러오기 추가
+            renderOrderBook();
+            updateTotalAmount();
+            // 10초마다 호가창 갱신
+            setInterval(renderOrderBook, 10000);
+            setInterval(loadUserInfo, 30000); // 30초마다 잔고 갱신
+        });
+
+        // URL 파라미터로 종목 직접 열기 지원
+        const urlParams = new URLSearchParams(window.location.search);
+        const tickerParam = urlParams.get('ticker');
+        if (tickerParam) {
+            currentTicker = tickerParam;
+        }
+    </script>
+</body>
+
+</html>
