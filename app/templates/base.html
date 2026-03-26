@@ -18,24 +18,24 @@
     {% block styles %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
-    <header class="bg-indigo-700 text-white shadow-lg">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold tracking-tight">
+    <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <nav class="container mx-auto px-4 md:px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="text-xl md:text-2xl font-bold tracking-tight">
                 <a href="{{ url_for('main.index') }}" class="hover:text-indigo-200 transition-colors">StockLab</a>
             </div>
-            <ul id="nav-links" class="flex space-x-8 font-medium">
+            <ul id="nav-links" class="flex items-center space-x-4 md:space-x-8 text-xs md:text-base font-medium">
                 <li><a href="{{ url_for('main.index') }}" class="hover:text-indigo-200 transition-colors">홈</a></li>
-                <li id="guest-nav"><a href="{{ url_for('auth.login_page') }}" class="px-4 py-2 bg-indigo-500 rounded-lg hover:bg-indigo-400 transition-all">로그인</a></li>
-                <li id="user-nav" class="hidden flex space-x-4">
-                    <a href="{{ url_for('auth.profile_page') }}" class="hover:text-indigo-200 transition-colors">내 정보 수정</a>
-                    <button onclick="logout()" class="text-indigo-200 hover:text-white transition-colors">로그아웃</button>
+                <li id="guest-nav"><a href="{{ url_for('auth.login_page') }}" class="px-3 py-1.5 md:px-4 md:py-2 bg-indigo-500 rounded-lg hover:bg-indigo-400 transition-all text-sm md:text-base">로그인</a></li>
+                <li id="user-nav" class="hidden flex items-center space-x-4">
+                    <a href="{{ url_for('auth.profile_page') }}" class="hover:text-indigo-200 transition-colors">관리</a>
+                    <button onclick="logout()" class="text-indigo-200 hover:text-white transition-colors border-l border-indigo-500 pl-4">로그아웃</button>
                 </li>
             </ul>
         </nav>
     </header>
 
-    <main class="container mx-auto px-6 py-12 flex-grow">
-        <div class="bg-white rounded-2xl shadow-sm p-8 md:p-12 border border-slate-100">
+    <main class="container mx-auto px-4 md:px-6 py-6 md:py-12 flex-grow">
+        <div class="bg-white rounded-2xl shadow-sm p-5 md:p-12 border border-slate-100 min-h-[60vh]">
             {% block content %}{% endblock %}
         </div>
     </main>
