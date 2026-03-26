@@ -88,19 +88,38 @@
             background: #16213e;
             border: 1px solid #0f3460;
             border-radius: 0 0 8px 8px;
-            z-index: 100;
-            max-height: 200px;
+            z-index: 1000;
+            max-height: 250px;
             overflow-y: auto;
+            display: none;
+            /* 초기 숨김 */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
         .search-result-item {
-            padding: 8px 12px;
+            padding: 10px 15px;
             cursor: pointer;
-            transition: background 0.1s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s;
         }
 
         .search-result-item:hover {
-            background: #0f3460;
+            background: #1e4d8c;
+        }
+
+        .search-result-name {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        .search-result-code {
+            font-size: 11px;
+            color: #94a3b8;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         }
 
         #chart-container {
@@ -232,8 +251,9 @@
             <!-- 종목 검색 바 -->
             <div class="relative w-72">
                 <input type="text" id="stock-search" placeholder="🔍 종목명 또는 코드 검색..."
-                    class="w-full px-4 py-2 text-sm rounded-lg" autocomplete="off">
-                <div id="search-results" class="hidden"></div>
+                    class="w-full px-4 py-2 text-sm rounded-lg" autocomplete="off"
+                    style="color: white; background: #0f3460; border: 1px solid #1e4d8c;">
+                <div id="search-results" class="search-results"></div>
             </div>
 
             <div class="flex items-center space-x-6">
@@ -255,7 +275,8 @@
                     </div>
                 </div>
                 <a href="/" class="text-gray-400 hover:text-white text-sm transition-colors">← 대시보드</a>
-                <span id="nav-current-price" class="text-2xl font-bold">{{ "{:,.0f}".format(price_data.current) if price_data else '0' }}</span>
+                <span id="nav-current-price" class="text-2xl font-bold">{{ "{:,.0f}".format(price_data.current) if
+                    price_data else '0' }}</span>
                 <span id="nav-change-rate" class="text-sm font-medium">-</span>
             </div>
         </nav>
@@ -276,7 +297,8 @@
                 <div class="text-right">
                     <div class="flex items-center justify-end space-x-2">
                         <span id="live-indicator" class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <p id="current-price-display" class="text-3xl font-extrabold">{{ "{:,.0f}".format(price_data.current) if price_data else '0' }}</p>
+                        <p id="current-price-display" class="text-3xl font-extrabold">{{
+                            "{:,.0f}".format(price_data.current) if price_data else '0' }}</p>
                     </div>
                     <p id="price-change-display" class="text-sm font-medium text-gray-400">데이터 로드 중...</p>
                     <div class="flex items-center justify-end space-x-2 mt-1">
@@ -289,15 +311,18 @@
                 <div class="grid grid-cols-3 gap-4 text-center text-sm">
                     <div>
                         <p class="text-gray-500 text-xs">시가</p>
-                        <p id="open-price" class="text-white font-medium">{{ "{:,.0f}".format(price_data.open) if price_data else '0' }}</p>
+                        <p id="open-price" class="text-white font-medium">{{ "{:,.0f}".format(price_data.open) if
+                            price_data else '0' }}</p>
                     </div>
                     <div>
                         <p class="text-gray-500 text-xs">고가</p>
-                        <p id="high-price" class="font-medium">{{ "{:,.0f}".format(price_data.high) if price_data else '0' }}</p>
+                        <p id="high-price" class="font-medium">{{ "{:,.0f}".format(price_data.high) if price_data else
+                            '0' }}</p>
                     </div>
                     <div>
                         <p class="text-gray-500 text-xs">저가</p>
-                        <p id="low-price" class="font-medium">{{ "{:,.0f}".format(price_data.low) if price_data else '0' }}</p>
+                        <p id="low-price" class="font-medium">{{ "{:,.0f}".format(price_data.low) if price_data else '0'
+                            }}</p>
                     </div>
                 </div>
                 <!-- 거래량 정보 삭제됨 -->
@@ -513,7 +538,7 @@
                     if (data.high) highPrice = data.high;
                     if (data.low) lowPrice = data.low;
                     if (data.open) openingPrice = data.open;
-                    
+
                     updateCurrentPrice(data.price);
 
                     if (baselineSeries && chart) {
@@ -1087,39 +1112,59 @@
             setTimeout(() => { alertEl.style.display = 'none'; }, 7000);
         }
 
-        // ─── 종목 검색 ────────────────────────────────────────────────
+        // ─── 종목 검색 (고도화된 클라이언트 사이드 검색) ──────────────────────
+        const stockDataForSearch = [
+            {% for stock in stocks %}
+        { code: "{{ stock.stock_code }}", name: "{{ stock.stock_name }}" },
+        {% endfor %}
+        ];
+
         const searchInput = document.getElementById('stock-search');
         const searchResults = document.getElementById('search-results');
 
-        searchInput.addEventListener('input', async function () {
-            const q = this.value.trim();
-            if (q.length < 2) { searchResults.classList.add('hidden'); return; }
+        searchInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            searchResults.innerHTML = '';
 
-            const token = localStorage.getItem('access_token');
-            try {
-                const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(q)}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
+            if (query.length === 0) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            const filtered = stockDataForSearch.filter(s =>
+                s.name.toLowerCase().includes(query) || s.code.includes(query)
+            );
+
+            if (filtered.length > 0) {
+                filtered.forEach(stock => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `
+                        <span class="search-result-name">${stock.name}</span>
+                        <span class="search-result-code">${stock.code}</span>
+                    `;
+                    item.onclick = () => {
+                        switchStock(stock.code, stock.name);
+                    };
+                    searchResults.appendChild(item);
                 });
-                const matches = await res.json();
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        });
 
-                if (matches.length === 0) {
-                    searchResults.innerHTML = '<div class="search-result-item text-gray-500">검색 결과 없음</div>';
-                } else {
-                    searchResults.innerHTML = matches.map(s => {
-                        return `<div class="search-result-item flex justify-between" onclick="switchStock('${s.ticker_code}', '${s.name}')">
-                        <span class="text-white">${s.name} <span class="text-gray-500 text-xs">${s.ticker_code}</span></span>
-                    </div>`;
-                    }).join('');
-                }
-                searchResults.classList.remove('hidden');
-            } catch (e) {
-                console.error('검색 오류:', e);
+        // 엔터키 입력 시 첫 번째 결과로 스위칭
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const firstItem = searchResults.querySelector('.search-result-item');
+                if (firstItem) firstItem.click();
             }
         });
 
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.classList.add('hidden');
+                searchResults.style.display = 'none';
             }
         });
 
@@ -1149,7 +1194,7 @@
             fetchHoldings();   // 보유 주식 갱신 (수익률 반영용)
             updateTotalAmount(); // 주문 섹션 갱신
 
-            showAlert(`📈 ${currentStockName} 종목으로 전환되었습니다.`, 'green');
+
         }
 
         // ─── 이벤트 바인딩 ────────────────────────────────────────────
@@ -1290,7 +1335,7 @@
             await fetchPendingOrders();
             renderOrderBook();
             updateTotalAmount();
-            
+
             // 초기 시세 UI 반영
             updateCurrentPrice(currentPrice);
 

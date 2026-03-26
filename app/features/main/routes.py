@@ -1,10 +1,17 @@
 from flask import render_template, request
 from . import main_bp
 from app.models.stock import Stock
+from app.features.home.services import HomeService
 
 @main_bp.route('/')
 def index():
-    return render_template('features/main/index.html')
+    period = request.args.get('period', 'realtime')
+    return render_template(
+        "features/home/index.html",
+        stocks=HomeService.get_stock_list(period),
+        current_time=HomeService.get_current_time(),
+        period=period
+    )
 
 @main_bp.route('/trading')
 def trading():
@@ -26,7 +33,11 @@ def trading():
         'low': int(stock_info.get('low', 0))
     }
     
+    # 전체 종목 리스트 (검색용)
+    all_stocks = HomeService.get_stock_list("realtime")
+    
     return render_template('features/trading/order.html', 
                           ticker=ticker, 
                           stock_name=stock_name, 
-                          price_data=price_data)
+                          price_data=price_data,
+                          stocks=all_stocks)
