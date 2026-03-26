@@ -7,7 +7,7 @@ from app.extensions import db, migrate, scheduler, jwt
 def create_app(config_name='dev'):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
-    
+
     # DB, Migrate, JWT 초기화
     db.init_app(app)
     migrate.init_app(app, db)
@@ -38,7 +38,6 @@ def create_app(config_name='dev'):
         from app.api_clients.auth import kis_auth
         kis_auth.get_access_token()
         kis_auth.get_approval_key()
-
         from app.features.execution import worker
         worker.start_redis_listener(app)
         from app.api_clients.websocket.ws_client import start_websocket_client
