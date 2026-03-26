@@ -1,18 +1,8 @@
 import time
 
 from flask import Flask
+from config import config_by_name
 from app.extensions import db, migrate, scheduler, jwt
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
-from config import config_by_name
-
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
-
-from app.extensions import db, migrate, scheduler
-from config import config_by_name
 
 def create_app(config_name='dev'):
     app = Flask(__name__)
@@ -35,15 +25,6 @@ def create_app(config_name='dev'):
         'db': app.config.get('REDIS_DB', 0),
         'password': app.config.get('REDIS_PASSWORD')
     })
-    # JWT 초기화
-    jwt.init_app(app)
-    # DB 및 Migrate 초기화
-    db.init_app(app)
-    migrate.init_app(app, db)
-
-    # SocketIO 초기화
-    from app.extensions import socketio
-    socketio.init_app(app)
 
     # Scheduler 초기화 및 시작
     scheduler.init_app(app)

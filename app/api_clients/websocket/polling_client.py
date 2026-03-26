@@ -9,12 +9,11 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
 
 from app.models.stock import Stock
-from app.api_clients.redis_client import init_redis
+from app.extensions import redis_client as redis
 from app.api_clients.auth.kis_auth import get_access_token
 from app import create_app
 
 load_dotenv()
-redis = init_redis()
 
 def get_current_price(ticker, access_token):
     """KIS API를 호출하여 현재가 정보를 가져와 Redis에 발행합니다."""

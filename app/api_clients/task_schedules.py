@@ -6,7 +6,7 @@ from app.extensions import scheduler
 from app.models.stock import Stock
 from app.extensions import redis_client
 
-@scheduler.task('cron', id='renewal_redis', hour='00', minute='01')
+@scheduler.task('cron', id='renewal_redis', hour='09', minute='50')
 def renewal_redis():
     if redis_client.ttl('access_token') < 80000:
         get_access_token()
@@ -16,7 +16,7 @@ def renewal_redis():
         print("⏰ RENEW redis approval_key by scheculer")
     print("⏳ Interval Scheduling: renewal_redis")
 
-@scheduler.task('cron', id='get_daily_stock_data', hour='15', minute='31')
+@scheduler.task('cron', id='get_daily_stock_data', hour='10', minute='08')
 def get_daily_stock_data():
     print("⏳ Interval Schedule: get_daily_stock_data")
     #저장 로직 Stock에 저장된 모든 ticker_code 대해 일별 시세 데이터 저장

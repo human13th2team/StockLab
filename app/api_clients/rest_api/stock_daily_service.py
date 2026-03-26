@@ -39,7 +39,7 @@ class stock_daily_service:
         ] # response에서 필요한 키-값만 지정
         today_yyyymmdd = datetime.today().strftime('%Y%m%d')
         if is_test:
-            res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, "20260324", "20260324")
+            res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, "20260225", "20260325")
         else:
             res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, today_yyyymmdd, today_yyyymmdd)
         if res.status_code == 200:
