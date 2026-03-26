@@ -60,7 +60,7 @@
     // 초기 정보 불러오기
     async function loadProfile() {
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/me', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await response.json();
@@ -88,7 +88,7 @@
         if (password) body.password = password;
         
         try {
-            const response = await fetch('/api/auth/me', {
+            const response = await fetch('/me', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

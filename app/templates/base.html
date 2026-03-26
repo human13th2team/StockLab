@@ -6,6 +6,15 @@
     <title>StockLab - {% block title %}{% endblock %}</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-subtle {
+            animation: bounce-subtle 2s infinite;
+        }
+    </style>
     {% block styles %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
@@ -37,7 +46,76 @@
         </div>
     </footer>
 
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <!-- Global Notification UI (Toast) -->
+    <div id="global-toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-3 pointer-events-none">
+        <!-- Toasts will be injected here -->
+    </div>
+
     <script>
+        // --- Socket.IO Global Setup ---
+        const socketUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
+        const globalSocket = io(socketUrl, {
+            path: '/socket.io',
+            transports: ['websocket', 'polling']
+        });
+
+        globalSocket.on('connect', () => {
+            console.log('✅ [Global Socket] Connected:', globalSocket.id);
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                globalSocket.emit('join', { token: token });
+            }
+        });
+
+        globalSocket.on('join_response', (data) => {
+            console.log('📢 [Global Socket] Joined room:', data.room);
+        });
+
+        globalSocket.on('order_executed', (data) => {
+            console.log('🎉 [Global Socket] Order Executed:', data);
+            // 모든 페이지에서 공통으로 토스트 알림 표시
+            showToast(data.message, data.order_type === 'BUY' ? 'success' : 'info');
+            
+            // 만약 현재 페이지가 거래 페이지라면 추가적인 데이터 갱신 유도 (커스텀 이벤트 발생)
+            window.dispatchEvent(new CustomEvent('order_executed_global', { detail: data }));
+        });
+
+        // --- Toss Style Toast System ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('global-toast-container');
+            const toast = document.createElement('div');
+            
+            // 토스 스타일 디자인: 둥근 모서리, 블러 배경, 그림자
+            toast.className = `
+                flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl 
+                animate-bounce-subtle pointer-events-auto transition-all duration-500 transform translate-y-10 opacity-0
+                backdrop-blur-md border border-white/20
+                ${type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-slate-800/90 text-white'}
+            `;
+            
+            const icon = type === 'success' ? '📈' : '📉';
+            toast.innerHTML = `
+                <span class="text-xl">${icon}</span>
+                <span class="font-bold text-sm tracking-tight">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // 나타나기 애니메이션 (레이아웃 후 적용)
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+            
+            // 5초 후 사라지기
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
         function checkGlobalAuth() {
             const token = localStorage.getItem('access_token');
             const guestNav = document.getElementById('guest-nav');
@@ -46,6 +124,11 @@
             if (token && guestNav && userNav) {
                 guestNav.classList.add('hidden');
                 userNav.classList.remove('hidden');
+                
+                // 이미 연결된 상태라면 다시 join 시도 (토큰이 나중에 확인된 경우 등)
+                if (globalSocket.connected) {
+                    globalSocket.emit('join', { token: token });
+                }
             }
         }
 

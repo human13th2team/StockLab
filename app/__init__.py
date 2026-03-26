@@ -17,6 +17,9 @@ def create_app(config_name='dev'):
     from app.extensions import socketio
     socketio.init_app(app)
     
+    # [NEW] SocketIO 이벤트 핸들러 등록
+    from . import socket_events
+    
     # Redis 초기화
     from app.extensions import redis_client
     redis_client.connection_pool.connection_kwargs.update({
@@ -59,11 +62,11 @@ def create_app(config_name='dev'):
     from app.features.main import main_bp
     from app.features.home import home_bp
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(auth_bp, url_prefix='')
     # app.register_blueprint(market_bp, url_prefix='/api/stocks')
     app.register_blueprint(trading_bp, url_prefix='/api/orders')
     app.register_blueprint(execution_bp, url_prefix='/api/executions')
-    app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
+    app.register_blueprint(analysis_bp, url_prefix='/analysis')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(home_bp, url_prefix='/api/home')
     app.register_blueprint(main_bp)

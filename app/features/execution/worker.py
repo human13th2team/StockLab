@@ -24,8 +24,14 @@ def process_message(app, message):
             
             with app.app_context():
                 # 1. 미체결 주문 체결 체크
-                executed_count = ExecutionService.check_and_execute_orders(ticker_code, current_price)
+                executions = ExecutionService.check_and_execute_orders(ticker_code, current_price)
                 
+                # [NEW] 체결 알림 발생
+                for exec_info in executions:
+                    user_id = exec_info.get('user_id')
+                    socketio.emit('order_executed', exec_info, room=f"user_{user_id}", namespace='/')
+                    print(f"🎉 [SocketIO] Emitted 'order_executed' to room 'user_{user_id}': {exec_info['message']}")
+
                 # 2. 브로드캐스트 (네임스페이스 명시 및 필드 보정)
                 socketio.emit('price_update', {
                     'ticker_code': ticker_code,
