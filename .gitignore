@@ -23,3 +23,6 @@ Thumbs.db
 # Release Tests
 Dockerfile
 docker-compose.yml
+
+# Logs
+app/features/analysis/*.log
