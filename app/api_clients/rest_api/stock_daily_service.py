@@ -1,3 +1,4 @@
+import os
 import time
 
 from app.models.stock_daily_data import StockDailyData
@@ -9,6 +10,7 @@ import requests
 from app.api_clients.rest_api import stock_daily_dto
 from datetime import datetime
 
+# 국내주식 기간별 시세 API 호출 [start_day:end_day+1] 및 결과 반환
 class stock_daily_service:
     @staticmethod
     def call_inquire_daily_itemchartprice(stock_code, start_day, end_day):
@@ -19,7 +21,7 @@ class stock_daily_service:
             fid_input_date_2=end_day, # 조회 종료일자(YYYYMMDD)
         ))
         res = requests.get(
-            "https://openapivts.koreainvestment.com:29443/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
+            url=os.getenv('KIS_DOMAIN') + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
             headers=api_header,
             params=api_query_params
         )
@@ -37,7 +39,7 @@ class stock_daily_service:
         ] # response에서 필요한 키-값만 지정
         today_yyyymmdd = datetime.today().strftime('%Y%m%d')
         if is_test:
-            res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, "20260319", "20260323")
+            res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, "20260225", "20260325")
         else:
             res = stock_daily_service.call_inquire_daily_itemchartprice(stock_code, today_yyyymmdd, today_yyyymmdd)
         if res.status_code == 200:
@@ -47,7 +49,7 @@ class stock_daily_service:
                 extract_columns = {col: row.get(col, "").strip() for col in columns}
                 if extract_columns['stck_oprc'] == "0":
                     return {"error": "없거나 상장폐지된 종목입니다"}, 404
-                # stock_daily_data에 저장
+                # stock_daily_data 테이블에 저장
                 else:
                     new_stock_daily = StockDailyData(
                         ticker_code = stock_code,
@@ -59,8 +61,8 @@ class stock_daily_service:
                     )
                     db.session.add(new_stock_daily)
                     db.session.commit()
-                    time.sleep(1.2)
-            return f"⛅️ {extract_columns['stck_bsop_date']} {stock_code} data is stored"
+                    time.sleep(0.1) # 유량 조정
+            # return f"⛅️ {extract_columns['stck_bsop_date']} {stock_code} data is stored"
         else:
             return f"uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice"
 

@@ -1,23 +1,45 @@
 from flask import jsonify, request, render_template
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import analysis_bp
-from .services import PortfolioService, AnalysisAIService
+from .services import PortfolioService, AnalysisAIService, FundingService
+from app.extensions import scheduler
+
+# 1. 주간 자금 지급 스케줄러 등록 (매주 월요일 09:00)
+@scheduler.task('cron', id='weekly_auto_funding', day_of_week='mon', hour='09', minute='00')
+def scheduled_funding():
+    with scheduler.app.app_context():
+        FundingService.run_weekly_funding(manual=False)
+
+# 2. 서버 재동작 시 미지급분 체크 (모듈 로드 시 실행)
+def check_startup_funding():
+    try:
+        if scheduler.app:
+            with scheduler.app.app_context():
+                FundingService.run_weekly_funding(manual=True)
+    except Exception:
+        pass
 
 # 서비스 초기화
 portfolio_service = PortfolioService()
 ai_service = AnalysisAIService()
+
+# 부팅 시 실행
+check_startup_funding()
 
 @analysis_bp.route('/report', methods=['GET'])
 def report():
     return render_template('features/analysis/report.html')
 
 @analysis_bp.route('/portfolio', methods=['GET'])
+@jwt_required()
 def get_portfolio():
     """
     내 포트폴리오 현황 조회 (실제 데이터베이스 기반)
     데이터가 없는 경우에도 기본 구조를 반환하여 프론트엔드 오류를 방지함.
     """
-    user_id = 1  # 테스트용 고정 ID
     try:
+        current_identity = get_jwt_identity()
+        user_id = int(current_identity)
         result = portfolio_service.get_user_portfolio(user_id)
         
         # 이동평균선(MA) 트렌드 데이터 생성 (그래프 시각화용)
@@ -45,14 +67,16 @@ def get_portfolio():
     return jsonify(result)
 
 @analysis_bp.route('/ai/recommend', methods=['POST'])
+@jwt_required()
 def ai_recommend():
     """
     실제 데이터베이스 데이터 기반 AI 추천 API
     """
-    user_id = 1
-    
-    # 1. 포트폴리오 데이터 확보 (실제 DB)
     try:
+        current_identity = get_jwt_identity()
+        user_id = int(current_identity)
+        
+        # 1. 포트폴리오 데이터 확보 (실제 DB)
         portfolio_data = portfolio_service.get_user_portfolio(user_id)
     except Exception as e:
         return jsonify({"status": "error", "message": f"DB 조회 실패: {str(e)}"}), 500

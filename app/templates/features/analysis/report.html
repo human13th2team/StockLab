@@ -59,14 +59,30 @@
             fetchPortfolio();
         }, []);
 
+        const getAuthHeaders = () => {
+            const token = localStorage.getItem('access_token');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        };
+
         const fetchPortfolio = async () => {
             try {
-                const response = await fetch('/api/analysis/portfolio');
+                const response = await fetch('/api/analysis/portfolio', {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401) {
+                    alert("로그인이 필요합니다.");
+                    window.location.href = "/auth/login";
+                    return;
+                }
+                
                 const data = await response.json();
                 setPortfolio(data);
                 setLoading(false);
                 
-                // 차트 렌더링을 위해 약간의 지연 (DOM 반영 대기)
                 setTimeout(() => {
                     renderCharts(data);
                 }, 100);
@@ -159,7 +175,7 @@
             try {
                 const response = await fetch('/api/analysis/ai/recommend', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getAuthHeaders()
                 });
                 const data = await response.json();
                 
