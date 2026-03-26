@@ -18,10 +18,7 @@
             background-color: #f4f6f8;
             color: #333;
             display: flex;
-            height: 100vh;
-            min-width: 900px;
-            overflow-x: auto;
-            overflow-y: hidden;
+            min-height: 100vh;
         }
 
         /* Sidebar Styles */
@@ -95,6 +92,53 @@
             flex: 1;
             padding: 32px 40px;
             overflow-y: auto;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            aside {
+                display: none;
+            }
+            
+            header {
+                padding: 0 20px;
+            }
+
+            .content-area {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                height: auto;
+                padding: 16px;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .user-profile {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .tab-container {
+                gap: 12px;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .tab {
+                padding: 8px 4px;
+                font-size: 13px;
+            }
+
+            /* 테이블 가로 스크롤을 위한 래퍼 */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
         }
 
         .card {
@@ -261,7 +305,7 @@
                     <div class="tab" data-status="CANCELLED">취소됨</div>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="table-container overflow-x-auto">
                     <table>
                         <thead>
                             <tr>

@@ -77,53 +77,53 @@
     </header>
 
     <!-- 핵심 요약 지표 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="p-8 bg-indigo-600 rounded-[32px] text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
-            <div class="absolute top-0 right-0 p-8 transform group-hover:scale-110 transition-transform duration-500 opacity-20">
-                <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+        <div class="p-6 md:p-8 bg-indigo-600 rounded-[24px] md:rounded-[32px] text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 md:p-8 transform group-hover:scale-110 transition-transform duration-500 opacity-20">
+                <svg class="w-16 h-16 md:w-24 md:h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             </div>
-            <p class="text-indigo-100 text-sm font-bold opacity-80 mb-2 uppercase tracking-widest">총 포트폴리오 가치</p>
-            <p id="stat-total-asset" class="text-4xl font-black">₩0</p>
+            <p class="text-indigo-100 text-xs md:text-sm font-bold opacity-80 mb-2 uppercase tracking-widest">총 포트폴리오 가치</p>
+            <p id="stat-total-asset" class="text-2xl md:text-4xl font-black">₩0</p>
         </div>
-        <div class="p-8 bg-white rounded-[32px] border border-slate-100 shadow-sm flex flex-col justify-between">
-            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-2">순수익률</p>
+        <div class="p-6 md:p-8 bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-sm flex flex-col justify-between">
+            <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest mb-2">순수익률</p>
             <div class="flex items-baseline space-x-2">
-                <span id="stat-total-roi" class="text-4xl font-black">0%</span>
-                <span id="stat-roi-icon" class="text-sm font-bold">-</span>
+                <span id="stat-total-roi" class="text-2xl md:text-4xl font-black">0%</span>
+                <span id="stat-roi-icon" class="text-xs md:text-sm font-bold">-</span>
             </div>
         </div>
-        <div class="p-8 bg-white rounded-[32px] border border-slate-100 shadow-sm">
-            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-2">보유 현금</p>
-            <p id="stat-cash" class="text-4xl font-black text-slate-800">₩0</p>
+        <div class="p-6 md:p-8 bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-sm">
+            <p class="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest mb-2">보유 현금</p>
+            <p id="stat-cash" class="text-2xl md:text-4xl font-black text-slate-800">₩0</p>
         </div>
     </div>
 
     <!-- 메인 분석 영역: 리얼타임 트렌드 & AI 리포트 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
         <!-- 수익률 추이 (선 그래프) -->
-        <div class="bg-white p-10 rounded-[40px] border border-slate-100 shadow-lg relative h-[450px] flex flex-col">
-            <div class="flex justify-between items-center mb-8">
-                <h3 class="text-xl font-black text-slate-800">포트폴리오 누적 자산 추이</h3>
-                <span class="trend-badge">수익률 추이</span>
+        <div class="bg-white p-6 md:p-10 rounded-[30px] md:rounded-[40px] border border-slate-100 shadow-lg relative h-[350px] md:h-[450px] flex flex-col">
+            <div class="flex justify-between items-center mb-6 md:mb-8">
+                <h3 class="text-lg md:text-xl font-black text-slate-800">포트폴리오 누적 자산 추이</h3>
+                <span class="trend-badge hidden sm:inline">수익률 추이</span>
             </div>
             <div class="flex-grow">
                 <canvas id="trendChart"></canvas>
             </div>
-            <p class="text-xs text-slate-400 mt-6 text-center italic">* 최근 10거래일간의 종가 데이터를 바탕으로 산출된 자산 총액 변화입니다.</p>
+            <p class="text-[10px] text-slate-400 mt-4 text-center italic">* 최근 10거래일 기준</p>
         </div>
 
         <!-- AI 기술적 추천 리포트 -->
-        <div class="bg-slate-900 p-10 rounded-[40px] shadow-2xl text-white flex flex-col h-[450px]">
-            <div class="flex justify-between items-center mb-8">
+        <div class="bg-slate-900 p-6 md:p-10 rounded-[30px] md:rounded-[40px] shadow-2xl text-white flex flex-col h-[400px] md:h-[450px]">
+            <div class="flex justify-between items-center mb-6 md:mb-8">
                 <div>
-                    <h3 class="text-xl font-black mb-1">AI 투자 성향 분석 리포트</h3>
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-tighter">포트폴리오 관리 어드바이저</p>
+                    <h3 class="text-lg md:text-xl font-black mb-1">AI 투자 리포트</h3>
+                    <p class="text-slate-500 text-[10px] font-bold uppercase">포트폴리오 어드바이저</p>
                 </div>
                 <button
                     id="btn-ai-analysis"
-                    class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-sm font-black transition-all transform active:scale-95 shadow-indigo-600/10 hover:shadow-lg hover:shadow-indigo-500/20"
+                    class="px-4 py-2 md:px-6 md:py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl md:rounded-2xl text-xs md:text-sm font-black transition-all transform active:scale-95 shadow-indigo-600/10 hover:shadow-lg hover:shadow-indigo-500/20"
                 >
-                    AI 리포트 생성
+                    AI 생성
                 </button>
             </div>
 
