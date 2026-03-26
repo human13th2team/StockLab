@@ -26,12 +26,16 @@ def process_message(app, message):
                 # 1. 미체결 주문 체결 체크
                 executed_count = ExecutionService.check_and_execute_orders(ticker_code, current_price)
                 
-                # 2. 브로드캐스트
+                # 2. 브로드캐스트 (네임스페이스 명시 및 필드 보정)
                 socketio.emit('price_update', {
                     'ticker_code': ticker_code,
-                    'price': mock_price
-                })
-                print(f"[SocketIO] Broadcasted price: {ticker_code} -> {mock_price} (Original: {current_price})")
+                    'price': mock_price,
+                    'current_price': current_price,
+                    'open': data.get('open'),
+                    'high': data.get('high'),
+                    'low': data.get('low')
+                }, namespace='/')
+                print(f"📢 [SocketIO] Broadcasted 'price_update' to '/': {ticker_code} -> {mock_price}")
                 
                 # DB 세션 명시적 반환 (Windows/Threading 대응)
                 db.session.remove()
