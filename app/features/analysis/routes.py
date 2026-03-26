@@ -1,10 +1,29 @@
 from flask import jsonify, request, render_template
 from . import analysis_bp
-from .services import PortfolioService, AnalysisAIService
+from .services import PortfolioService, AnalysisAIService, FundingService
+from app.extensions import scheduler
+
+# 1. 주간 자금 지급 스케줄러 등록 (매주 월요일 09:00)
+@scheduler.task('cron', id='weekly_auto_funding', day_of_week='mon', hour='09', minute='00')
+def scheduled_funding():
+    with scheduler.app.app_context():
+        FundingService.run_weekly_funding(manual=False)
+
+# 2. 서버 재동작 시 미지급분 체크 (모듈 로드 시 실행)
+def check_startup_funding():
+    try:
+        if scheduler.app:
+            with scheduler.app.app_context():
+                FundingService.run_weekly_funding(manual=True)
+    except Exception:
+        pass
 
 # 서비스 초기화
 portfolio_service = PortfolioService()
 ai_service = AnalysisAIService()
+
+# 부팅 시 실행
+check_startup_funding()
 
 @analysis_bp.route('/report', methods=['GET'])
 def report():

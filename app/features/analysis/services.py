@@ -150,3 +150,63 @@ class AnalysisAIService:
     def get_investment_advice(self, portfolio_data):
         """기존 인터페이스 하위 호환"""
         return self.get_trend_analysis(portfolio_data)
+
+class FundingService:
+    """주간 자금 지급 및 미지급분 소급 처리 서비스"""
+    
+    @staticmethod
+    def run_weekly_funding(manual=False):
+        """
+        자금 지급 메인 로직. 
+        Redis를 통해 이번 주 지급 여부를 확인하여 미지급 시 처리함.
+        """
+        from app.extensions import db, redis_client
+        from app.models.user import User
+        import datetime
+        import logging
+        import os
+
+        # 1. 전용 로그 설정 (analysis 폴더 내 funding.log)
+        logger = logging.getLogger("weekly_funding")
+        if not logger.handlers:
+            log_path = os.path.join(os.path.dirname(__file__), "funding.log")
+            handler = logging.FileHandler(log_path)
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            handler.set_formatter(formatter)
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+
+        # 2. 이번 주차 확인 (ISO week)
+        now = datetime.datetime.now()
+        current_week = now.strftime("%Y-%W")
+        redis_key = "last_funded_week_id"
+
+        # 3. Redis 확인 (중복 지급 및 미지급 체크)
+        try:
+            last_funded = redis_client.get(redis_key)
+            if last_funded and last_funded.decode('utf-8') == current_week:
+                if manual:
+                    logger.info(f"알림: 이번 주({current_week}) 자금은 이미 지급되었습니다.")
+                return
+        except Exception as e:
+            logger.error(f"Redis 연결 오류: {str(e)}")
+
+        # 4. 자금 업데이트 수행
+        FUNDING_AMOUNT = 1000000 # 100만원
+        reason = "정기 스케줄 지급" if not manual else "서버 재가동에 따른 미지급분 소급 지급"
+        
+        try:
+            # 일반 사용자(roles=False)의 cash를 업데이트
+            users = User.query.filter_by(roles=False).all()
+            for user in users:
+                user.cash += FUNDING_AMOUNT
+            
+            db.session.commit()
+            
+            # Redis 업데이트
+            redis_client.set(redis_key, current_week)
+            
+            logger.info(f"✅ {reason} 완료: {len(users)}명에게 지급됨 (주차: {current_week})")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"❌ {reason} 실패: {str(e)}")
