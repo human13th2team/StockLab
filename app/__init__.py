@@ -55,7 +55,7 @@ def create_app(config_name='dev'):
     from app.features.admin import admin_bp
     from app.features.main import main_bp
     from app.features.home import home_bp
-    
+
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(market_bp, url_prefix='/api/stocks')
     app.register_blueprint(trading_bp, url_prefix='/api/orders')

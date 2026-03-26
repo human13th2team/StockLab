@@ -70,7 +70,7 @@ def login():
 @jwt_required()
 def me():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, int(current_user_id))
     
     if not user:
         return jsonify({"msg": "User not found"}), 404
@@ -88,7 +88,7 @@ def me():
 @jwt_required()
 def update_me():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, int(current_user_id))
     
     if not user:
         return jsonify({"msg": "User not found"}), 404
