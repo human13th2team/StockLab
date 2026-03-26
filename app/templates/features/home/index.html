@@ -539,8 +539,8 @@
                             </td>
                             {% if period == 'realtime' %}
                             <td><span class="price-val">{{ "{:,.0f}".format(stock.price) }}</span></td>
-                            <td><span class="high-val">-</span></td>
-                            <td><span class="low-val">-</span></td>
+                            <td><span class="high-val">{{ "{:,.0f}".format(stock.high_price) }}</span></td>
+                            <td><span class="low-val">{{ "{:,.0f}".format(stock.low_price) }}</span></td>
                             <td style="padding-right:8px;">
                                 <span
                                     class="rate-val {% if stock.oprc_vrss_rate.startswith('+') %}rate-positive{% elif stock.oprc_vrss_rate.startswith('-') %}rate-negative{% else %}rate-neutral{% endif %}">
