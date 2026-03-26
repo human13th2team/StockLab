@@ -38,10 +38,9 @@ def get_portfolio():
     인증된 사용자의 ID를 JWT를 통해 가져옵니다.
     """
     try:
-        # JWT가 있으면 그 ID를 쓰고, 없거나 쿼리 파라미터가 있으면 해당 ID 사용 (테스트용)
-        user_id = request.args.get('user_id', get_jwt_identity())
-        if not user_id:
-            user_id = 2 # 기본값 2번 유저 (user1)로 설정하여 테스트 편의 제공
+        current_identity = get_jwt_identity()
+        user_id = int(current_identity)
+        result = portfolio_service.get_user_portfolio(user_id)
         
         print(f"DEBUG: requested user_id={user_id}, type={type(user_id)}")
         result = portfolio_service.get_user_portfolio(user_id)
@@ -52,17 +51,16 @@ def get_portfolio():
     return jsonify(result)
 
 @analysis_bp.route('/ai/recommend', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def ai_recommend():
     """
     실제 데이터베이스 데이터 기반 AI 추천 API
     인증된 사용자의 ID를 JWT를 통해 가져옵니다.
     """
     try:
-        user_id = request.args.get('user_id', get_jwt_identity())
-        if not user_id:
-            user_id = 2 # 기본값 2번 유저 (user1)
-            
+        current_identity = get_jwt_identity()
+        user_id = int(current_identity)
+        
         # 1. 포트폴리오 데이터 확보 (실제 DB)
         portfolio_data = portfolio_service.get_user_portfolio(user_id)
     except Exception as e:

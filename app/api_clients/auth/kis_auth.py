@@ -13,6 +13,7 @@ ToDo:
 """
 import os
 import dataclasses
+import os
 
 import requests
 from dotenv import load_dotenv
@@ -22,7 +23,7 @@ from app.api_clients.auth import auth_to_redis, kis_auth_dto
 load_dotenv()
 
 def get_approval_key():
-    # 갱신이 필요한지 여부 체크 (Boolean)
+    """웹소켓 통신에 사용하는 승인키 상태체크 및 발급"""
     status_ok = auth_to_redis.is_approval_key_ttl_valid()
     if status_ok:
         return auth_to_redis.get_approval_key_from_redis()
@@ -38,7 +39,7 @@ def get_approval_key():
     header_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestHeader())
     body_dict = dataclasses.asdict(kis_auth_dto.ApprovalRequestBody())
     res = requests.post(
-        "https://openapivts.koreainvestment.com:29443/oauth2/Approval",
+        url=os.getenv('KIS_DOMAIN') + "/oauth2/Approval",
         headers=header_dict,
         json=body_dict
     )
@@ -52,7 +53,7 @@ def get_approval_key():
         return ""
 
 def get_access_token():
-    # 캐시된 값 있으면 캐시값 return
+    """REST API 호출에 사용하는 접근 토큰 상태체크 및 발급"""
     status_ok = auth_to_redis.is_access_token_ttl_valid()
     if status_ok:
         return auth_to_redis.get_access_token_from_redis()
@@ -68,7 +69,7 @@ def get_access_token():
     body_dict = dataclasses.asdict(kis_auth_dto.AccessRequestBody())
 
     res = requests.post(
-        "https://openapivts.koreainvestment.com:29443/oauth2/tokenP",
+        url=os.getenv('KIS_DOMAIN') + "/oauth2/tokenP",
         headers=header_dict,
         json=body_dict
     )

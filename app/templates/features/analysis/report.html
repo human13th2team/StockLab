@@ -180,7 +180,7 @@
             try {
                 const response = await fetch('/api/analysis/ai/recommend', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: getAuthHeaders()
                 });
                 const data = await response.json();
 

@@ -7,8 +7,8 @@ from app.api_clients.auth.auth_to_redis import get_access_token_from_redis
 class MarketDataRequestHeader:
     content_type: str="application/json; charset=utf-8"
     authorization: str= field(
-    default_factory = lambda: "Bearer " + get_access_token_from_redis()
-)
+        default_factory = lambda: "Bearer " + get_access_token_from_redis()
+    )
     appkey: str=os.getenv('KIS_APP_KEY')
     appsecret: str=os.getenv('KIS_APP_SECRET')
     tr_id: str="FHKST01010100"

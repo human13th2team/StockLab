@@ -1,7 +1,5 @@
 from flask import render_template, request
 from . import main_bp
-from flask import render_template, request
-from . import main_bp
 from app.models.stock import Stock
 
 @main_bp.route('/')

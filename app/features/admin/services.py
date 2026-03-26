@@ -4,11 +4,12 @@ from .admin_dashboard_dto import admin_dashboard_dto, token_status, user_ranking
 from app.models.user import User
 from app.models.holding import Holding
 from app.models.stock import Stock
-from ...api_clients.redis_client import init_redis
+from app.api_clients.auth.kis_auth import get_access_token, get_approval_key
+from app.extensions import redis_client, jwt
 from sqlalchemy import func, outerjoin, desc, asc
+from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
-
-class admin_dashboard_service:
+class AdminDashboardService:
     """관리자 페이지 정보 제공 서비스"""
     @staticmethod
     def get_total_user():
@@ -24,9 +25,8 @@ class admin_dashboard_service:
             return token_status.HEALTHY
 
     def get_token_info(self):
-        r = init_redis()
-        access_ttl = r.ttl('access_token')
-        approval_ttl = r.ttl('approval_key')
+        access_ttl = redis_client.ttl('access_token')
+        approval_ttl = redis_client.ttl('approval_key')
 
         return {
             "access_token" : self.get_token_status(access_ttl),
@@ -67,7 +67,7 @@ class admin_dashboard_service:
         kosdaq_count = Stock.query.filter_by(
             market_type="KOSDAQ"
         ).count()
-        # print("짝수" if num % 2 == 0 else "홀수")
+        
         return asset_activate_dto(
             is_kospi_activate=True if kospi_count > 0 else False,
             is_kosdaq_activate=True if kosdaq_count > 0 else False
@@ -81,4 +81,28 @@ class admin_dashboard_service:
             asset_activate_status=self.get_asset_activate()
         )
 
+    @staticmethod
+    def admin_renew_access_token():
+        redis_client.delete('access_token') 
+        result = get_access_token()
+        if result:
+            return {"success": True, "message": "Access Token 갱신 완료"}
+        return {"success": False, "message": "Access Token 갱신 실패"}
 
+    @staticmethod
+    def admin_renew_approval_key():
+        redis_client.delete('approval_key')
+        result = get_approval_key()
+        if result:
+            return {"success": True, "message": "Approval Key 갱신 완료"}
+        return {"success": False, "message": "Approval Key 갱신 실패"}
+
+    @staticmethod
+    def is_admin_role():
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        # 사용자가 아니거나 역할이 admin
+        if not user or not user.roles:
+            return False
+        else:
+            return True

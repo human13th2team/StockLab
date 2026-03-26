@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-"""Classes for get APPROVAL KEY."""
 @dataclass
 class ApprovalRequestHeader:
     content_type: str = "application/json; utf-8"
@@ -45,7 +44,6 @@ class ApprovalResponseBody:
     def get_approval_key(self):
         return self.approval_key
 
-"""Classes for get ACCESS KEY."""
 @dataclass
 class AccessRequestHeader:
     pass

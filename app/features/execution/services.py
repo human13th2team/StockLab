@@ -64,45 +64,45 @@ class ExecutionService:
         total_price = final_price * order.quantity
 
         if order.order_type == OrderType.BUY:
-            # 현금 차감 및 예수금(투자금) 증가
-            user.cash -= total_price
-            user.deposit += total_price
+            # 매수 체결 시: 이미 place_order_service에서 cash -> deposit으로 이동됨.
+            order_cost = order.target_price * order.quantity
+            actual_cost = final_price * order.quantity
+            diff = order_cost - actual_cost
+            
+            user.deposit = (user.deposit or 0) - order_cost
+            if diff > 0:
+                user.cash = (user.cash or 0) + diff
 
             if holding:
                 # 평균 단가 및 수량 업데이트
-                old_total_cost = float(holding.avg_price) * holding.available_qty
+                old_qty = (holding.available_qty or 0) + (holding.frozen_qty or 0)
+                old_total_cost = float(holding.avg_price or 0) * old_qty
                 new_cost = float(final_price) * order.quantity
-                new_total_qty = holding.available_qty + order.quantity
+                new_total_qty = old_qty + order.quantity
                 
                 holding.avg_price = (old_total_cost + new_cost) / new_total_qty
-                holding.available_qty = new_total_qty
+                holding.available_qty = (holding.available_qty or 0) + order.quantity
             else:
                 # 새 보유 종목 추가
                 new_holding = Holding(
                     user_id=order.user_id,
                     ticker_code=order.ticker_code,
                     available_qty=order.quantity,
+                    frozen_qty=0,
                     avg_price=final_price
                 )
                 db.session.add(new_holding)
         
         elif order.order_type == OrderType.SELL:
             if holding:
-                # 현금 증가 (현재가 기준)
-                user.cash += total_price
+                # 매도 체결 시: 현금 증가 (체결가 기준)
+                user.cash = (user.cash or 0) + total_price
                 
-                # 예수금(투자금) 감소 (기존 매매가 기준 차감으로 투자 원금 회수 처리)
-                # 만약 전체 수량을 다 파는게 아니라면 부분 차감
-                cost_basis = float(holding.avg_price) * order.quantity
-                user.deposit -= cost_basis
-
-                # 매도 시 frozen_qty 차감 (Trading에서 동결시켰다고 가정)
-                holding.frozen_qty -= order.quantity
+                # 매도 주문 시 동결되었던 수량 차감
+                holding.frozen_qty = (holding.frozen_qty or 0) - order.quantity
                 
-                # 만약 보유 수량이 0이 되면 관리 필요 (여기서는 수량만 차감)
-                if holding.available_qty + holding.frozen_qty == 0:
-                    # 필요시 삭제하거나 유지
-                    pass
+                if (holding.available_qty or 0) + (holding.frozen_qty or 0) == 0:
+                    db.session.delete(holding)
         
     @staticmethod
     def get_user_executions(user_id, ticker_code=None):

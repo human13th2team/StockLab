@@ -200,6 +200,15 @@
         .warn-pulse {
             animation: pulse-warn 1s infinite;
         }
+
+        @keyframes flash-green {
+            0% { background-color: rgba(34, 197, 94, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .flash-update {
+            animation: flash-green 0.8s ease-out;
+        }
     </style>
 </head>
 
@@ -230,8 +239,12 @@
                         <span id="user-nickname" class="user-nickname-display text-sm font-bold text-blue-400">게스트</span>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <span class="text-[10px] text-gray-500">예수금</span>
+                        <span class="text-[10px] text-gray-500">가용현금</span>
                         <span id="user-cash" class="user-cash-display text-sm font-bold text-green-400">0원</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-gray-400">주문중(동결)</span>
+                        <span id="user-deposit" class="user-deposit-display text-sm font-semibold text-orange-300">0원</span>
                     </div>
                 </div>
                 <a href="/" class="text-gray-400 hover:text-white text-sm transition-colors">← 대시보드</a>
@@ -279,10 +292,7 @@
                         <p id="low-price" class="price-down font-medium">73,900</p>
                     </div>
                 </div>
-                <div>
-                    <p class="text-gray-500 text-xs">거래량</p>
-                    <p id="volume-display" class="text-white font-medium">12,840,300</p>
-                </div>
+                <!-- 거래량 정보 삭제됨 -->
             </div>
 
             <!-- 캔들 차트 -->
@@ -338,12 +348,7 @@
         <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
 
             <!-- 호가창 -->
-            <div class="card p-4">
-                <h2 class="text-sm font-semibold text-gray-300 mb-3">호가창</h2>
-                <div id="orderbook" class="text-xs space-y-0.5">
-                    <!-- JS로 동적 생성 -->
-                </div>
-            </div>
+            <!-- 호가창 삭제됨 -->
 
             <!-- 주문 폼 -->
             <div class="card p-4">
@@ -416,7 +421,7 @@
                     <span id="pending-count-badge"
                         class="hidden bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
-                <span class="text-xs text-gray-500">30분 내 미체결 시 자동 취소 및 금액 환불</span>
+                <span class="text-xs text-gray-500">장 마감(15:30)까지 미체결 시 자동 취소 및 금액 환불</span>
             </div>
             <div id="pending-orders-list">
                 <p class="text-gray-600 text-xs text-center py-4">미체결 주문이 없습니다.</p>
@@ -431,15 +436,16 @@
         let currentPrice = 0;
         let currentTab = 'buy';
         let currentInterval = '1m';
-        let chart, candleSeries;
+        let chart, baselineSeries, volumeSeries;
         let chartUpdateTimer = null;
+        let lastBar = null;
 
 
-        // Socket.IO 연결 (명시적으로 현재 포트 지정)
-        const socketPath = window.location.protocol + "//" + window.location.hostname + ":" + window.location.port;
-        console.log('🔌 [Socket.IO] Attempting connection to:', socketPath);
+        // Socket.IO 연결 (현재 호스트와 포트 자동 감지)
+        const socketUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
+        console.log('🔌 [Socket.IO] Attempting connection to:', socketUrl);
         
-        const socket = io(socketPath, {
+        const socket = io(socketUrl, {
             path: '/socket.io',
             transports: ['websocket', 'polling'],
             reconnectionAttempts: 10
@@ -487,46 +493,30 @@
         });
 
         socket.on('price_update', (data) => {
+            console.log(`📡 [Socket.IO] Price Update: ${data.ticker_code} = ${data.price.toLocaleString()}`);
             try {
-                // 수신 로그 (브라우저 콘솔에서 확인 가능)
-                console.log(`📡 [REAL-TIME] ${data.ticker_code}: ${data.price.toLocaleString()}원`);
-                
                 if (data.ticker_code === currentTicker) {
+                    const prevPrice = currentPrice; // 색상 결정을 위해 이전 가격 보관
                     updateCurrentPrice(data.price);
                     
-                    // 시각적 피드백: 가격 엘리먼트 번쩍임 효과
-                    const priceEls = ['nav-current-price', 'current-price-display'];
-                    priceEls.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            el.style.transition = 'none';
-                            el.style.opacity = '0.5';
-                            setTimeout(() => {
-                                el.style.transition = 'opacity 0.3s';
-                                el.style.opacity = '1';
-                            }, 50);
-                        }
-                    });
-
-                    // 차트 마지막 캔들 업데이트
-                    const chartData = candleSeries.getData();
-                    if (chartData.length > 0) {
-                        const lastBar = chartData[chartData.length - 1];
-                        candleSeries.update({
-                            ...lastBar,
-                            close: data.price,
-                            high: Math.max(lastBar.high, data.price),
-                            low: Math.min(lastBar.low, data.price)
+                    if (baselineSeries && chart) {
+                        const now = Math.floor(Date.now() / 1000);
+                        baselineSeries.update({
+                            time: now,
+                            value: data.price
                         });
+
+                        // 거래량 히스토그램 업데이트 삭제됨
+                        chart.timeScale().scrollToRealTime();
                     }
                 }
-
-                // 보유 주가 수익률 실시간 반영
-                if (typeof renderHoldings === 'function') {
+                
+                // 보유 주식 중 해당 종목이 있으면 목록 갱신
+                if (myHoldings && myHoldings.some(h => h.ticker_code === data.ticker_code)) {
                     renderHoldings();
                 }
             } catch (e) {
-                console.error('시세 수신 처리 중 오류:', e);
+                console.error('❌ UI Update Error:', e);
             }
         });
 
@@ -571,37 +561,79 @@
         // ─── 차트 초기화 ──────────────────────────────────────────────
         function initChart() {
             const container = document.getElementById('chart-container');
+            if (chart) {
+                try { chart.remove(); } catch(e) {}
+                container.innerHTML = '';
+            }
+            
             chart = LightweightCharts.createChart(container, {
-                width: container.clientWidth,
+                width: container.offsetWidth || 800,
                 height: 340,
-                layout: { background: { color: '#16213e' }, textColor: '#a0aec0' },
-                grid: { vertLines: { color: '#0f3460' }, horzLines: { color: '#0f3460' } },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: '#0f3460' },
-                timeScale: { borderColor: '#0f3460', timeVisible: true, secondsVisible: false },
+                layout: {
+                    background: { color: '#000000' }, 
+                    textColor: '#abb0b8', 
+                },
+                grid: {
+                    vertLines: { visible: false }, 
+                    horzLines: { visible: false },
+                },
+                rightPriceScale: {
+                    borderColor: 'transparent', 
+                    visible: true,
+                    autoScale: true,
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.2,
+                    },
+                },
+                timeScale: {
+                    borderColor: 'rgba(197, 203, 206, 0.4)',
+                    timeVisible: true,
+                    shiftVisibleRangeOnNewBar: true,
+                },
             });
 
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#ef4444',
-                downColor: '#3b82f6',
-                borderUpColor: '#ef4444',
-                borderDownColor: '#3b82f6',
-                wickUpColor: '#ef4444',
-                wickDownColor: '#3b82f6',
+            // 토스 스타일 주식 그래프 (등락 기준선 배경 채우기)
+            baselineSeries = chart.addBaselineSeries({
+                baseValue: { type: 'price', price: currentPrice || 0 },
+                topLineColor: '#ff455e', 
+                topFillColor1: 'rgba(255, 69, 94, 0.4)',
+                topFillColor2: 'rgba(255, 69, 94, 0.05)',
+                bottomLineColor: '#3182f6', 
+                bottomFillColor1: 'rgba(49, 130, 246, 0.05)',
+                bottomFillColor2: 'rgba(49, 130, 246, 0.4)',
+                lineWidth: 4,
+            });
+            
+            /* 
+            volumeSeries = chart.addHistogramSeries({
+                color: 'rgba(150, 150, 150, 0.2)', 
+                priceFormat: { type: 'volume' },
+                priceScaleId: '', 
             });
 
+            volumeSeries.priceScale().applyOptions({
+                scaleMargins: { top: 0.8, bottom: 0 },
+            });
+            */
             loadChartData();
+        }
 
+        // 윈도우 리사이즈 핸들러
+        if (!window.__resize_handler_registered) {
             window.addEventListener('resize', () => {
-                chart.applyOptions({ width: container.clientWidth });
+                if (chart && document.getElementById('chart-container')) {
+                    chart.applyOptions({ width: document.getElementById('chart-container').offsetWidth });
+                }
             });
+            window.__resize_handler_registered = true;
         }
 
         function generateCandleData(basePrice, count, intervalMinutes) {
             const data = [];
             let price = basePrice * (0.95 + Math.random() * 0.05);
-            const now = Math.floor(Date.now() / 1000);
             const step = intervalMinutes * 60;
+            const now = Math.floor(Date.now() / 1000 / step) * step;
 
             for (let i = count; i >= 0; i--) {
                 const time = now - i * step;
@@ -626,8 +658,50 @@
             // 실시간 현재가 먼저 가져오기
             await fetchCurrentData(currentTicker);
 
-            const data = generateCandleData(currentPrice, count, minutes);
-            candleSeries.setData(data);
+            try {
+                const res = await fetch(`/api/stocks/history/${currentTicker}?interval=${minutes}`);
+                const historyData = await res.json();
+                
+                if (historyData && historyData.length > 0) {
+                    const lineData = historyData.map(d => ({ time: d.time, value: d.close }));
+                    baselineSeries.setData(lineData);
+                    baselineSeries.applyOptions({ baseValue: { type: 'price', price: historyData[0].open } });
+                    
+                    /*
+                    const vData = historyData.map(d => ({
+                        time: d.time,
+                        value: d.volume || (Math.random() * 100000),
+                        color: d.close >= d.open ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+                    }));
+                    volumeSeries.setData(vData);
+                    */
+                    
+                    lastBar = historyData[historyData.length - 1];
+                } else {
+                    const base = currentPrice > 0 ? currentPrice : 50000;
+                    const dummyData = generateCandleData(base, count, minutes);
+                    
+                    const lineData = dummyData.map(d => ({ time: d.time, value: d.close }));
+                    baselineSeries.setData(lineData);
+                    baselineSeries.applyOptions({ baseValue: { type: 'price', price: base } });
+                    
+                    /*
+                    const vData = dummyData.map(d => ({
+                        time: d.time,
+                        value: Math.random() * 100000,
+                        color: d.close >= d.open ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+                    }));
+                    volumeSeries.setData(vData);
+                    */
+                    
+                    lastBar = dummyData[dummyData.length - 1];
+                }
+            } catch (err) {
+                console.error('❌ 차트 데이터 로드 실패:', err);
+                const dummyData = generateCandleData(currentPrice, count, minutes);
+                const lineData = dummyData.map(d => ({ time: d.time, value: d.close }));
+                baselineSeries.setData(lineData);
+            }
             chart.timeScale().fitContent();
 
             // 실시간 업데이트는 Socket.IO로 처리하므로 타이머 제거
@@ -672,6 +746,11 @@
                 if (el) {
                     el.textContent = formatted;
                     el.className = el.className.replace(/price-(up|down)/g, '') + ' ' + cls;
+                    
+                    // 전조등 효과 (업데이트 시각화)
+                    el.classList.remove('flash-update');
+                    void el.offsetWidth; // 리플로우 강제 유발
+                    el.classList.add('flash-update');
                 }
             });
 
@@ -705,46 +784,8 @@
 
         // ─── 호가창 렌더링 ────────────────────────────────────────────
         function renderOrderBook() {
-            const ob = document.getElementById('orderbook');
-            const spread = currentPrice * 0.003;
-            let html = '';
-
-            // 매도 호가 (위 5단계)
-            for (let i = 5; i >= 1; i--) {
-                const price = Math.round((currentPrice + spread * i) / 100) * 100;
-                const qty = Math.floor(Math.random() * 8000 + 500);
-                const barW = Math.min(qty / 100, 80);
-                html += `<div class="orderbook-row flex items-center justify-between py-0.5 px-1 rounded">
-                <span class="text-blue-400 font-medium w-24 text-right">${price.toLocaleString()}</span>
-                <div class="flex-1 mx-2 h-4 rounded-sm overflow-hidden" style="background:rgba(59,130,246,0.1)">
-                    <div style="width:${barW}%;height:100%;background:rgba(59,130,246,0.35);float:right;"></div>
-                </div>
-                <span class="text-gray-400 w-16 text-right">${qty.toLocaleString()}</span>
-            </div>`;
-            }
-
-            // 현재가 구분선
-            html += `<div class="my-1 py-1 px-1 bg-gray-800 rounded flex justify-between items-center">
-            <span class="text-xs text-gray-400">현재가</span>
-            <span class="font-bold text-white">${currentPrice.toLocaleString()}</span>
-            <span class="text-xs text-gray-400">체결</span>
-        </div>`;
-
-            // 매수 호가 (아래 5단계)
-            for (let i = 1; i <= 5; i++) {
-                const price = Math.round((currentPrice - spread * i) / 100) * 100;
-                const qty = Math.floor(Math.random() * 8000 + 500);
-                const barW = Math.min(qty / 100, 80);
-                html += `<div class="orderbook-row flex items-center justify-between py-0.5 px-1 rounded cursor-pointer" onclick="setOrderPrice(${price})">
-                <span class="text-red-400 font-medium w-24 text-right">${price.toLocaleString()}</span>
-                <div class="flex-1 mx-2 h-4 rounded-sm overflow-hidden" style="background:rgba(239,68,68,0.1)">
-                    <div style="width:${barW}%;height:100%;background:rgba(239,68,68,0.35);"></div>
-                </div>
-                <span class="text-gray-400 w-16 text-right">${qty.toLocaleString()}</span>
-            </div>`;
-            }
-
-            ob.innerHTML = html;
+            // 호가창 기능 비활성화됨
+            return;
         }
 
         function setOrderPrice(price) {
@@ -814,33 +855,32 @@
             const orderType = document.getElementById('order-type').value;
             const isBuy = currentTab === 'buy';
 
-            // 가격 보호 적용
-            const needsProtection = (isBuy && rawPrice > currentPrice) || (!isBuy && rawPrice < currentPrice);
-            const execPrice = (orderType === 'market' || needsProtection) ? currentPrice : rawPrice;
-
             const payload = {
                 ticker_code: currentTicker,
                 order_type: currentTab.toUpperCase(),
-                price: execPrice,
+                price: rawPrice,
                 quantity: qty,
-                is_market: orderType === 'market' || needsProtection
+                is_market: orderType === 'market'
             };
 
             const alertEl = document.getElementById('order-alert');
             alertEl.className = 'card p-3 text-sm text-center';
             alertEl.style.display = 'block';
 
+            const token = localStorage.getItem('access_token');
             try {
                 const res = await fetch('/api/orders', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
 
                 if (res.ok) {
-                    const protectMsg = needsProtection ? ' (가격 보호 적용)' : '';
-                    alertEl.textContent = `✅ ${isBuy ? '매수' : '매도'} 주문 접수! ${qty}주 × ${execPrice.toLocaleString()}원${protectMsg} — 30분 내 미체결 시 자동 취소`;
+                    alertEl.textContent = `✅ ${isBuy ? '매수' : '매도'} 주문 접수! ${qty}주 × ${rawPrice.toLocaleString()}원 — 장 마감(15:30)까지 미체결 시 자동 취소`;
                     alertEl.style.background = 'rgba(34,197,94,0.15)';
                     alertEl.style.borderColor = 'rgba(34,197,94,0.4)';
                     alertEl.style.color = '#86efac';
@@ -851,10 +891,12 @@
                         ticker: currentTicker,
                         stockName: currentStockName,
                         type: currentTab.toUpperCase(),
-                        price: execPrice,
+                        price: rawPrice,
                         qty,
+                        createdAt: new Date().getTime(),
                         expiresAt: new Date(data.expires_at).getTime()
                     });
+                    loadUserInfo(); // 주문 성공 시 즉시 정보 갱신
                 } else {
                     const errorMsg = data.error || data.message || '서버 오류';
                     throw new Error(errorMsg);
@@ -881,13 +923,20 @@
 
         // ─── 수동 취소 요청 ───────────────────────────────────────────
         async function cancelOrder(orderId) {
+            const token = localStorage.getItem('access_token');
             try {
-                const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+                const res = await fetch(`/api/orders/${orderId}`, { 
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
                 const data = await res.json();
                 if (res.ok) {
                     pendingOrders = pendingOrders.filter(o => o.orderId !== orderId);
                     renderPendingOrders();
                     showAlert(`🔄 주문 취소 완료! 환불: ${(data.refund_amount || 0).toLocaleString()}원`, 'green');
+                    loadUserInfo(); // 취소 성공 시 즉시 정보 갱신
                 } else {
                     showAlert(`❌ 취소 실패: ${data.message}`, 'red');
                 }
@@ -903,13 +952,17 @@
             pendingOrders = pendingOrders.filter(o => {
                 if (now >= o.expiresAt) {
                     // 만료 — UI에서 제거 (서버에서 이미 자동 취소됨)
-                    showAlert(`⏰ 주문 #${o.orderId} (${o.stockName}) 30분 만기 자동 취소 및 ${(o.price * o.qty).toLocaleString()}원 환불`, 'yellow');
+                    showAlert(`⏰ 주문 #${o.orderId} (${o.stockName}) 장 마감 만기 자동 취소 및 ${(o.price * o.qty).toLocaleString()}원 환불`, 'yellow');
                     removed = true;
                     return false;
                 }
                 return true;
             });
-            if (removed) renderPendingOrders();
+            if (removed) {
+                renderPendingOrders();
+                loadUserInfo();
+                fetchHoldings();
+            }
             updateTimerBars();
             if (pendingOrders.length === 0 && timerInterval) {
                 clearInterval(timerInterval);
@@ -920,10 +973,10 @@
         // ─── 타이머 바 업데이트 ───────────────────────────────────────
         function updateTimerBars() {
             const now = Date.now();
-            const THIRTY_MIN_MS = 30 * 60 * 1000;
             pendingOrders.forEach(o => {
+                const totalDuration = o.expiresAt - (o.createdAt || (o.expiresAt - 30 * 60 * 1000));
                 const remaining = Math.max(0, o.expiresAt - now);
-                const pct = (remaining / THIRTY_MIN_MS) * 100;
+                const pct = (remaining / totalDuration) * 100;
                 const fill = document.getElementById(`timer-fill-${o.orderId}`);
                 const text = document.getElementById(`timer-text-${o.orderId}`);
                 if (!fill || !text) return;
@@ -955,15 +1008,15 @@
                 return;
             }
 
-            const THIRTY_MIN_MS = 30 * 60 * 1000;
             const now = Date.now();
             container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${pendingOrders.map(o => {
                 const isBuy = o.type === 'BUY';
                 const typeClass = isBuy ? 'text-red-400' : 'text-blue-400';
                 const typeLabel = isBuy ? '매수' : '매도';
                 const total = (o.price * o.qty).toLocaleString();
+                const totalDuration = o.expiresAt - (o.createdAt || (o.expiresAt - 30 * 60 * 1000));
                 const remaining = Math.max(0, o.expiresAt - now);
-                const pct = (remaining / THIRTY_MIN_MS) * 100;
+                const pct = (remaining / totalDuration) * 100;
                 const secs = Math.floor(remaining / 1000);
                 const m = Math.floor(secs / 60).toString().padStart(2, '0');
                 const s = (secs % 60).toString().padStart(2, '0');
@@ -1020,8 +1073,11 @@
             const q = this.value.trim();
             if (q.length < 2) { searchResults.classList.add('hidden'); return; }
 
+            const token = localStorage.getItem('access_token');
             try {
-                const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(q)}`);
+                const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(q)}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
                 const matches = await res.json();
 
                 if (matches.length === 0) {
@@ -1046,25 +1102,32 @@
         });
 
         async function switchStock(ticker, name) {
+            console.log(`🔄 [SwitchStock] Moving to ${name} (${ticker})`);
             currentTicker = ticker;
             if (name) currentStockName = name;
 
-            // UI 업데이트
+            // 1. UI 헤더 즉시 업데이트
             document.getElementById('nav-stock-name').textContent = currentStockName;
             document.getElementById('nav-ticker').textContent = ticker;
             document.getElementById('stock-name-header').textContent = currentStockName;
             document.getElementById('ticker-code-header').textContent = `KRX: ${ticker}`;
-
+            
+            // 2. 검색창 초기화
             searchInput.value = '';
             searchResults.classList.add('hidden');
 
-            // 히스토리 push (새로고침 없이 URL 변경)
+            // 3. 브라우저 URL 업데이트 (새로고침 없이)
             const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?ticker=' + ticker;
             window.history.pushState({ path: newUrl }, '', newUrl);
 
-            await loadChartData();
-            document.getElementById('order-price').value = currentPrice;
-            updateTotalAmount();
+            // 4. 데이터 초기화 및 재요청
+            currentPrice = 0; // 초기화
+            initChart();      // 차트 초기화 (내부에서 fetchCurrentData 호출)
+            renderOrderBook(); // 호가창 초기화
+            fetchHoldings();   // 보유 주식 갱신 (수익률 반영용)
+            updateTotalAmount(); // 주문 섹션 갱신
+            
+            showAlert(`📈 ${currentStockName} 종목으로 전환되었습니다.`, 'green');
         }
 
         // ─── 이벤트 바인딩 ────────────────────────────────────────────
@@ -1082,8 +1145,11 @@
         let myHoldings = [];
 
         async function fetchHoldings() {
+            const token = localStorage.getItem('access_token');
             try {
-                const res = await fetch('/api/orders/holdings');
+                const res = await fetch('/api/orders/holdings', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
                 if (!res.ok) return;
                 myHoldings = await res.json();
                 renderHoldings();
@@ -1119,25 +1185,66 @@
             }).join('');
         }
 
-        // 시세 업데이트 시 보유주식 화면도 갱신
-        socket.on('price_update', (data) => {
-            if (myHoldings.some(h => h.ticker_code === data.ticker_code)) {
-                renderHoldings();
-            }
+        // 시세 업데이트 시 보유주식 화면도 갱신 (상단 통합 리스너에서 이미 처리함)
+
+        socket.on('order_executed', (data) => {
+            console.log('🎉 [SocketIO] Order Executed:', data);
+            showAlert(`✅ ${data.message}!`, 'green');
+            fetchHoldings();
+            fetchPendingOrders();
+            loadUserInfo();
         });
 
-        // 초기 로드 및 주기적 갱신
-        fetchHoldings();
-        setInterval(fetchHoldings, 10000); // 10초마다 서버 데이터 동기화
+
+        async function fetchPendingOrders() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/orders/pending', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                // 클라이언트 형식으로 변환
+                pendingOrders = data.map(o => ({
+                    orderId: o.order_id,
+                    ticker: o.ticker_code,
+                    stockName: o.stock_name,
+                    type: o.order_type,
+                    price: o.target_price,
+                    qty: o.quantity,
+                    createdAt: new Date(o.created_at).getTime(),
+                    expiresAt: new Date(o.expires_at).getTime()
+                }));
+                renderPendingOrders();
+                
+                if (pendingOrders.length > 0 && !timerInterval) {
+                   timerInterval = setInterval(tickTimers, 1000);
+                }
+            } catch (e) {
+                console.error('미체결 주문 조회 오류:', e);
+            }
+        }
 
         // ─── 유저 정보 로드 ──────────────────────────────────────────
          async function loadUserInfo() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+
             try {
-                const res = await fetch('/api/auth/me');
+                const res = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
                 const data = await res.json();
                 if (res.ok) {
                     const cashEls = document.querySelectorAll('.user-cash-display');
                     cashEls.forEach(el => el.textContent = data.cash.toLocaleString() + '원');
+                    
+                    const depositEls = document.querySelectorAll('.user-deposit-display');
+                    depositEls.forEach(el => el.textContent = (data.deposit || 0).toLocaleString() + '원');
+
                     const nickEls = document.querySelectorAll('.user-nickname-display');
                     nickEls.forEach(el => el.textContent = data.nickname);
                 }
@@ -1147,22 +1254,27 @@
         }
 
         // ─── 초기화 ───────────────────────────────────────────────────
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
+            // URL 파라미터 먼저 파싱
+            const urlParams = new URLSearchParams(window.location.search);
+            const tickerParam = urlParams.get('ticker');
+            if (tickerParam) {
+                currentTicker = tickerParam;
+            }
+
             initChart();
-            loadUserInfo(); // 유저 정보 불러오기 추가
+            await loadUserInfo();
+            await fetchHoldings();
+            await fetchPendingOrders();
             renderOrderBook();
             updateTotalAmount();
-            // 10초마다 호가창 갱신
-            setInterval(renderOrderBook, 10000);
-            setInterval(loadUserInfo, 30000); // 30초마다 잔고 갱신
-        });
 
-        // URL 파라미터로 종목 직접 열기 지원
-        const urlParams = new URLSearchParams(window.location.search);
-        const tickerParam = urlParams.get('ticker');
-        if (tickerParam) {
-            currentTicker = tickerParam;
-        }
+            // 주기적 갱신 설정
+            setInterval(renderOrderBook, 10000);
+            setInterval(loadUserInfo, 30000);
+            setInterval(fetchHoldings, 10000);
+            setInterval(fetchPendingOrders, 10000);
+        });
     </script>
 </body>
 
