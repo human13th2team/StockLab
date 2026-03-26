@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockLab - 투자 제어</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+            color: #333;
+            display: flex;
+            height: 100vh;
+            min-width: 900px;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        /* Sidebar Styles */
+        aside {
+            width: 220px;
+            min-width: 220px;
+            background-color: #ffffff;
+            border-right: 1px solid #e1e5eb;
+            padding: 28px 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .logo-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #2b5cff;
+            margin-bottom: 4px;
+        }
+
+        .logo-subtitle {
+            font-size: 10px;
+            color: #a0aabf;
+            letter-spacing: 1px;
+            margin-bottom: 40px;
+        }
+
+        .menu-item {
+            padding: 14px 18px;
+            text-decoration: none;
+            color: #4a5568;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .menu-item.active {
+            color: #2b5cff;
+            background-color: #eff3ff;
+        }
+
+        /* Main Layout Styles */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f7fa;
+            overflow: hidden;
+        }
+
+        header {
+            height: 72px;
+            background-color: #f5f7fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 40px;
+            border-bottom: 1px solid #e1e5eb;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 32px 40px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #eef0f3;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid #e1e5eb;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 4px;
+            font-weight: 600;
+            color: #718096;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #2b5cff;
+        }
+
+        .tab.active {
+            color: #2b5cff;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: #2b5cff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #a0aec0;
+            font-weight: 600;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        td {
+            padding: 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #f1f3f5;
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .status-completed { background-color: #e6fffa; color: #319795; }
+        .status-pending { background-color: #fffaf0; color: #dd6b20; }
+        .status-cancelled { background-color: #fff5f5; color: #e53e3e; }
+
+        .type-buy { color: #f56565; font-weight: 700; }
+        .type-sell { color: #4299e1; font-weight: 700; }
+
+        /* User Profile in Header */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2b5cff, #4facfe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .user-info-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-nickname {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .user-cash {
+            font-size: 12px;
+            color: #718096;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 왼쪽 사이드바 -->
+    <aside>
+        <div class="logo-title">StockLab</div>
+        <div class="logo-subtitle">PROFESSIONAL SIMULATION</div>
+
+        <a href="/" class="menu-item">📊 실시간 대시보드</a>
+        <a href="/analysis" class="menu-item">👤 마이페이지</a>
+        <a href="/control" class="menu-item active">📈 투자 제어</a>
+        <a href="/api/admin" class="menu-item">⚙️ 관리자 콘솔</a>
+
+        <div style="margin-top: auto;" id="auth-menu-container">
+            <a href="#" class="menu-item" id="auth-link" onclick="handleLogout()">
+                <span id="auth-icon">🔓</span> <span id="auth-text">로그아웃</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- 우측 메인 컨텐츠 영역 -->
+    <main>
+        <!-- 상단 헤더 -->
+        <header>
+            <div style="font-weight: 600; font-size: 18px;">투자 제어 현황</div>
+            <div class="user-profile">
+                <div class="user-info-text" style="align-items: flex-end;">
+                    <span class="user-nickname" id="header-nickname">불러오는 중...</span>
+                    <span class="user-cash" id="header-cash">₩ 0</span>
+                </div>
+                <div class="user-avatar" id="header-avatar">?</div>
+            </div>
+        </header>
+
+        <!-- 실제 컨텐츠 영역 -->
+        <div class="content-area">
+            <div class="card">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">주문 및 체결 내역</h2>
+                    <button onclick="loadHistory()" class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">새로고침 ↻</button>
+                </div>
+
+                <div class="tab-container">
+                    <div class="tab active" data-status="ALL">전체</div>
+                    <div class="tab" data-status="COMPLETED">체결완료</div>
+                    <div class="tab" data-status="PENDING">미체결</div>
+                    <div class="tab" data-status="CANCELLED">취소됨</div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>주문일시</th>
+                                <th>종목명</th>
+                                <th>구분</th>
+                                <th>주문가</th>
+                                <th>수량</th>
+                                <th>상태</th>
+                                <th>체결가</th>
+                                <th>주문번호</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-list">
+                            <!-- JS로 렌더링 -->
+                            <tr>
+                                <td colspan="8" class="text-center py-20 text-gray-400">내역을 불러오는 중입니다...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let allHistory = [];
+        let currentFilter = 'ALL';
+
+        async function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Auth failed');
+                const user = await response.json();
+                
+                document.getElementById('header-nickname').textContent = user.nickname;
+                document.getElementById('header-cash').textContent = `₩ ${user.cash.toLocaleString()}`;
+                document.getElementById('header-avatar').textContent = user.nickname.substring(0, 1).toUpperCase();
+            } catch (error) {
+                console.error('Auth Error:', error);
+                localStorage.removeItem('access_token');
+                window.location.href = '/login';
+            }
+        }
+
+        async function loadHistory() {
+            const token = localStorage.getItem('access_token');
+            const tbody = document.getElementById('history-list');
+            
+            try {
+                const response = await fetch('/api/executions/history', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Fetch failed');
+                allHistory = await response.json();
+                renderHistory();
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-20 text-red-500">내역을 불러오는데 실패했습니다.</td></tr>';
+            }
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('history-list');
+            const filtered = currentFilter === 'ALL' 
+                ? allHistory 
+                : allHistory.filter(h => h.status === currentFilter);
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-20 text-gray-400">표시할 내역이 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="text-gray-500 text-xs">${item.created_at}</td>
+                    <td>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-gray-800">${item.stock_name}</span>
+                            <span class="text-[10px] text-gray-400">${item.ticker_code}</span>
+                        </div>
+                    </td>
+                    <td class="${item.order_type === 'BUY' ? 'type-buy' : 'type-sell'}">
+                        ${item.order_type === 'BUY' ? '매수' : '매도'}
+                    </td>
+                    <td class="font-medium">₩ ${item.target_price.toLocaleString()}</td>
+                    <td class="font-medium">${item.quantity}주</td>
+                    <td>
+                        <span class="status-badge ${getStatusClass(item.status)}">
+                            ${getStatusText(item.status)}
+                        </span>
+                    </td>
+                    <td class="font-bold text-blue-600">
+                        ${item.execution ? '₩ ' + item.execution.final_price.toLocaleString() : '-'}
+                    </td>
+                    <td class="text-gray-400 text-xs">#${item.id}</td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'COMPLETED': return 'status-completed';
+                case 'PENDING': return 'status-pending';
+                case 'CANCELLED': return 'status-cancelled';
+                default: return '';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'COMPLETED': return '체결완료';
+                case 'PENDING': return '미체결';
+                case 'CANCELLED': return '취소됨';
+                default: return status;
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+
+        // 탭 클릭 이벤트
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.getAttribute('data-status');
+                renderHistory();
+            });
+        });
+
+        // 초기 로드
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
