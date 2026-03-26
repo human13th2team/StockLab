@@ -99,10 +99,6 @@ class AdminDashboardService:
 
     @staticmethod
     def is_admin_role():
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
-        # 사용자가 아니거나 역할이 admin
-        if not user or not user.roles:
-            return False
-        else:
-            return True
+        # 토큰 내부의 claims에서 roles 정보를 바로 가져옴 (DB 조회 제거)
+        claims = get_jwt()
+        return claims.get("roles", False)

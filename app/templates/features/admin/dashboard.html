@@ -709,9 +709,24 @@
             return 'status-critical';
         }
 
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            window.location.href = "{{ url_for('auth.login_page') }}";
+        }
+
         async function fetchAdminData() {
             try {
-                const response = await fetch('/api/admin');
+                const response = await fetch('/api/admin', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    alert("권한이 없거나 세션이 만료되었습니다.");
+                    window.location.href = "{{ url_for('auth.login_page') }}";
+                    return;
+                }
                 if (!response.ok) throw new Error('API 로딩 실패');
 
                 const data = await response.json();
@@ -825,7 +840,12 @@
             btn.textContent = '⏳ 갱신 중...';
 
             try {
-                const res = await fetch(url, { method: 'POST' });
+                const res = await fetch(url, { 
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
                 const data = await res.json();
                 if (data.success) {
                     btn.textContent = '✅ 갱신 완료';

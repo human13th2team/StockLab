@@ -55,7 +55,11 @@ def login():
     user = User.query.filter_by(email=email).first()
     
     if user and user.check_password(password):
-        access_token = create_access_token(identity=str(user.id))
+        # additional_claims를 통해 토큰 내부에 roles 정보를 포함 시킴
+        access_token = create_access_token(
+            identity=str(user.id),
+            additional_claims={"roles": user.roles}
+        )
         return jsonify({
             "access_token": access_token,
             "user": {

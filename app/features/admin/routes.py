@@ -4,21 +4,27 @@ from .services import AdminDashboardService
 from flask_jwt_extended import jwt_required
 
 @admin_bp.route('', methods=['GET'])
+@jwt_required()
 def get_admins():
-    return jsonify(AdminDashboardService.get_admin_dashboard().model_dump(mode='json'))
+    if AdminDashboardService.is_admin_role():
+        return jsonify(AdminDashboardService.get_admin_dashboard().model_dump(mode='json'))
+    return jsonify({"msg": "Admin privilege required"}), 403
 
 @admin_bp.route('/dashboard', methods=['GET'])
-@jwt_required()
 def get_dashboard():
-    if AdminDashboardService.is_admin_role():
-        return render_template('features/admin/dashboard.html')
-    else:
-        return render_template('features/auth/login.html')
+    # 페이지 렌더링은 허용하고, 실제 데이터 보안은 클라이언트 측 JS와 API에서 담당합니다.
+    return render_template('features/admin/dashboard.html')
 
 @admin_bp.route('/renewal/access-token', methods=['POST'])
+@jwt_required()
 def renew_access_token():
-    return jsonify(AdminDashboardService.admin_renew_access_token())
+    if AdminDashboardService.is_admin_role():
+        return jsonify(AdminDashboardService.admin_renew_access_token())
+    return jsonify({"msg": "Admin privilege required"}), 403
 
 @admin_bp.route('/renewal/approval-key', methods=['POST'])
+@jwt_required()
 def renew_approval_key():
-    return jsonify(AdminDashboardService.admin_renew_approval_key())
+    if AdminDashboardService.is_admin_role():
+        return jsonify(AdminDashboardService.admin_renew_approval_key())
+    return jsonify({"msg": "Admin privilege required"}), 403
