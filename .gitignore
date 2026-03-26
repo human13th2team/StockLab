@@ -19,3 +19,7 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Release Tests
+Dockerfile
+docker-compose.yml

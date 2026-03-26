@@ -10,6 +10,7 @@ class MarketDataService:
     @staticmethod
     # 종목 코드 기반으로 정보 찾아오기
     def search_stock_by_code(stock_code):
+        """주식 현재가 API 요청"""
         # 필요한 칼럼 리스트
         columns = [
             "stck_prpr",	# 주식 현재가
@@ -32,20 +33,18 @@ class MarketDataService:
         base_url = os.getenv('IMMITATION_DOMAIN', 'https://openapivts.koreainvestment.com:29443')
         api_url = f"{base_url}/uapi/domestic-stock/v1/quotations/inquire-price"
         res = requests.get(
-            api_url,
+            url=os.getenv('KIS_DOMAIN') + "/uapi/domestic-stock/v1/quotations/inquire-price",
             headers=api_header,
             params=api_query_params
         )
-        res_json = res.json()
-        if res.status_code == 200 and res_json.get('rt_cd') == '0':
-            data = res_json.get('output', {})
-            extract_data = {col: data.get(col, "").strip() if data.get(col) else "0" for col in columns}
-            
-            if not extract_data.get('stck_prpr') or extract_data['stck_prpr'] == "0":
-                return {"error": "데이터가 없거나 잘못되었습니다."}, 404
-            
-            extract_data['ticker_code'] = stock_code
-            return extract_data, 200
+        if res.status_code == 200:
+            data = res.json().get('output', {})
+            extract_data = {col: data.get(col, "").strip() for col in columns}
+            if extract_data['stck_prpr'] == "0":
+                return {"error": "없거나 상장폐지된 종목입니다"}, 404
+            else:
+                extract_data['ticker_code'] = stock_code
+                return extract_data, 200
         else:
             error_msg = res_json.get('msg1', 'KIS API 호출 실패')
             print(f"❌ KIS API Error: {error_msg} (rt_cd: {res_json.get('rt_cd')})")
@@ -53,7 +52,6 @@ class MarketDataService:
 
     @staticmethod
     def search_stock_by_name(stock_name):
-        # stock 테이블에서 이름과 매칭되는 종목코드 찾기
         stock_code = StockInfoService.get_stock_code_by_name(stock_name)
 
         if not stock_code:
