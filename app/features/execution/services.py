@@ -19,11 +19,9 @@ class ExecutionService:
             status=OrderStatus.PENDING
         ).all()
 
-        executed_count = 0
+        executions_info = []
         for order in pending_orders:
             # 2. 체결 조건 확인 (지정가 매칭)
-            # 매수: 현재가 <= 목표가 이면 체결
-            # 매도: 현재가 >= 목표가 이면 체결
             is_match = False
             if order.order_type == OrderType.BUY and current_price <= order.target_price:
                 is_match = True
@@ -32,13 +30,27 @@ class ExecutionService:
 
             if is_match:
                 ExecutionService._handle_execution(order, current_price)
-                executed_count += 1
+                
+                # [NEW] 알림용 데이터 수집 (사용자 ID, 종목명, 체결가, 수량 등)
+                from app.models.stock import Stock
+                stock = Stock.query.filter_by(stock_code=ticker_code).first()
+                stock_name = stock.stock_name if stock else ticker_code
+                
+                executions_info.append({
+                    "user_id": order.user_id,
+                    "ticker_code": ticker_code,
+                    "stock_name": stock_name,
+                    "order_type": order.order_type.name, # 'BUY' or 'SELL'
+                    "final_price": current_price,
+                    "quantity": order.quantity,
+                    "message": f"{stock_name} {order.quantity}주가 {current_price:,.0f}원에 {'매수' if order.order_type == OrderType.BUY else '매도'} 체결되었습니다."
+                })
         
-        if executed_count > 0:
+        if executions_info:
             db.session.commit()
-            print(f"[Execution] {ticker_code} 종목 {executed_count}건 체결 완료 (현재가: {current_price})")
+            print(f"[Execution] {ticker_code} 종목 {len(executions_info)}건 체결 완료 (현재가: {current_price})")
         
-        return executed_count
+        return executions_info
 
     @staticmethod
     def _handle_execution(order, final_price):

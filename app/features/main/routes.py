@@ -1,4 +1,5 @@
-from flask import render_template, request
+from flask import render_template, request, session
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import main_bp
 from app.models.stock import Stock
 from app.features.home.services import HomeService

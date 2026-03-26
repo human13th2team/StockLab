@@ -26,7 +26,7 @@ ai_service = AnalysisAIService()
 # 부팅 시 실행
 check_startup_funding()
 
-@analysis_bp.route('/report', methods=['GET'])
+@analysis_bp.route('/', methods=['GET'])
 def report():
     return render_template('features/analysis/report.html')
 
