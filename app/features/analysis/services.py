@@ -252,7 +252,7 @@ class FundingService:
                 funding_logger.info(f"알림: 이번 주({current_week}) 자금은 이미 지급되었습니다.")
             return
 
-        FUNDING_AMOUNT = 50000000
+        FUNDING_AMOUNT = 10000000
         reason = "정기 스케줄 지급" if not manual else "서버 재가동에 따른 미지급분 소급 지급"
         
         try:
