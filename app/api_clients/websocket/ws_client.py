@@ -1,8 +1,7 @@
 import threading
-
+import traceback
 import websocket
 import json
-
 import os
 from dotenv import load_dotenv
 
@@ -23,6 +22,8 @@ STCK_PRPR_IDX = 2
 STCK_HGPR_IDX = 8
 # STCK_LWPR: float    #주식 최저가
 STCK_LWPR_IDX = 9
+# STCK_OPRC: float    #주식 시가
+STCK_OPRC_IDX = 7
 # OPRC_VRSS_PRPR_SIGN #시가대비구분(str)
 OPRC_VRSS_PRPR_SIGN_IDX = 25
 # OPRC_VRSS_PRPR      #시가 대비(num)
@@ -45,22 +46,29 @@ def calculate_oprc_vrss_rate(current_price, sign, vrss):
 
 def on_open(ws):
     """stocks 테이블에 저장된 종목을 구독하고, 시세 변동을 포착하기 위한 소켓통신"""
-    conect_key = get_approval_key_from_redis()
-    header = ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key).to_dict()
-    # stocks 테이블에 저장된 종목 모두 구독
-    stocks = [stock.ticker_code for stock in Stock.query.all()]
-    for stock in stocks:
-        body = ws_domestic_dto.MarketPriceRequestBody(tr_key=stock).wrap_marketprice_request_body()
-        request = {
-            "header": header,
-            "body": body
-        }
-        ws.send(json.dumps(request))
+    print('✅ [KIS WS] OPENED connection start!!')
+    try:
+        conect_key = get_approval_key_from_redis()
+        if not conect_key:
+            print("⚠️ [KIS WS] No approval key found in Redis. Subscription may fail.")
+            return
 
-    print('✅ OPENED connection start!!')
+        header = ws_domestic_dto.MarketPriceRequestHeader(approval_key=conect_key).to_dict()
+        # stocks 테이블에 저장된 종목 모두 구독
+        stocks = [stock.ticker_code for stock in Stock.query.all()]
+        for stock in stocks:
+            body = ws_domestic_dto.MarketPriceRequestBody(tr_key=stock).wrap_marketprice_request_body()
+            request = {
+                "header": header,
+                "body": body
+            }
+            ws.send(json.dumps(request))
+    except Exception as e:
+        print(f"💥 [KIS WS] Error during on_open: {e}")
+        traceback.print_exc()
 
 def on_close(ws, status_code, close_msg):
-    print('🚪 CLOSED close_status_code=', status_code, " close_msg=", close_msg)
+    print('🚪 [KIS WS] CLOSED close_status_code=', status_code, " close_msg=", close_msg)
 
 def on_message(ws, msg):
     """실시간 체결가를 받아와서 Redis에 저장"""
@@ -80,15 +88,31 @@ def on_message(ws, msg):
 
         # 기존에 저장된 최신값과 현재 체결가가 동일하면 Redis에 저장하지 않는다
         if last_price is not None and int(last_price) == price:
-            print(f"{stock_code} Redis not updated (가격 동일: {price})")
+            pass # print(f"{stock_code} Redis not updated (가격 동일: {price})")
         # 새로운 값이 들어온 경우 Redis에 저장한다
         else:
             redis_client.lpush(f"price:{stock_code}", price)
             redis_client.ltrim(f"price:{stock_code}", 0, 9)
-            # 체결 엔진(execution)에 알림 발행
+            
+            # 시가 데이터 (API 제공 고정값 사용)
+            opening_price = int(data[STCK_OPRC_IDX])
+
+            # Redis Hash 저장 (상세 정보)
+            redis_client.hset(f"stock_info:{stock_code}", mapping={
+                "current": price,
+                "open": opening_price,
+                "high": high,
+                "low": low
+            })
+
+            # 체결 엔진(execution) 및 프론트엔드 통신을 위한 알림 발행
             message = {
                 "ticker_code": stock_code,
-                "current_price": price
+                "price": price,          # 프론트엔드(order.html) 호환용
+                "current_price": price,   # 사용자 정의 필드 유지
+                "open": opening_price,
+                "high": high,
+                "low": low
             }
             redis_client.publish("price_updates", json.dumps(message))
 
@@ -99,20 +123,21 @@ def on_message(ws, msg):
                 "stock_code": stock_code,
                 "oprc_vrss_rate": oprc_vrss_rate,
                 "higher_price": high,
-                "lowest_proce": low
+                "lowest_price": low
             }
             redis_client.publish("oprc_vrss_updates", json.dumps(home_msg))
     else:
         pass
-        # 메시지가 너무 많아서 주석처리
-        # print("📩 MESSAGE" + msg)
+        # 메시지가 0으로 시작하지 않으면 (예: 성공/실패 JSON 응답) 내용 출력
+        # print("📩 [KIS WS] Non-data message received: " + msg)
 
 def on_error(ws, error):
-    print("💥 Socket error=", error)
+    print("💥 [KIS WS] Socket error=", error)
 
 def run_websocket(app):
     with app.app_context():
         url = os.getenv('KIS_WS_DOMAIN')
+        print(f"🚀 [KIS WS] Connecting to {url}...")
         ws = websocket.WebSocketApp(
             url,
             on_open=on_open,

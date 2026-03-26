@@ -12,8 +12,13 @@ class HomeService:
         result = []
 
         for stock in stocks:
+            # 기본 가격 정보 (리스트형)
             price = redis_client.lindex(f"price:{stock.ticker_code}", 0)
             price = int(price.decode('utf-8')) if price else 0
+
+            # 상세 정보 (해시형) - 바이트 디코딩 주의
+            raw_info = redis_client.hgetall(f"stock_info:{stock.ticker_code}")
+            stock_info = {k.decode('utf-8'): v.decode('utf-8') for k, v in raw_info.items()}
 
             oprc_vrss = redis_client.get(f"oprc_vrss:{stock.ticker_code}")
             oprc_vrss = oprc_vrss.decode('utf-8') if oprc_vrss else "0.00%"
@@ -22,6 +27,8 @@ class HomeService:
                 "stock_code": stock.ticker_code,
                 "stock_name": stock.name,
                 "price": price,
+                "high_price": int(stock_info.get('high', 0)),
+                "low_price": int(stock_info.get('low', 0)),
                 "oprc_vrss_rate": oprc_vrss
             })
 

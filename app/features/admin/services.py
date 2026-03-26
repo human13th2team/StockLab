@@ -11,12 +11,12 @@ from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
 class AdminDashboardService:
     """관리자 페이지 정보 제공 서비스"""
-    @staticmethod
-    def get_total_user():
+    @classmethod
+    def get_total_user(cls):
         return User.query.count()
 
-    @staticmethod
-    def get_token_status(ttl):
+    @classmethod
+    def get_token_status(cls, ttl):
         if (ttl < 600):
             return token_status.CRITICAL
         elif (ttl < 3600):
@@ -24,17 +24,18 @@ class AdminDashboardService:
         else:
             return token_status.HEALTHY
 
-    def get_token_info(self):
+    @classmethod
+    def get_token_info(cls):
         access_ttl = redis_client.ttl('access_token')
         approval_ttl = redis_client.ttl('approval_key')
 
         return {
-            "access_token" : self.get_token_status(access_ttl),
-            "approval_key": self.get_token_status(approval_ttl)
+            "access_token" : cls.get_token_status(access_ttl),
+            "approval_key": cls.get_token_status(approval_ttl)
         }
 
-    @staticmethod
-    def get_user_ranking():
+    @classmethod
+    def get_user_ranking(cls):
         # 상위 3명, 하위 3명
         # 현금 + 주식수량*평단가
         # 모든 사용자(User)의 User.cash + Holding.available_qty*Holding.avg_price
@@ -59,8 +60,8 @@ class AdminDashboardService:
             ]
         )
 
-    @staticmethod
-    def get_asset_activate():
+    @classmethod
+    def get_asset_activate(cls):
         kospi_count = Stock.query.filter_by(
             market_type="KOSPI",
         ).count()
@@ -73,12 +74,13 @@ class AdminDashboardService:
             is_kosdaq_activate=True if kosdaq_count > 0 else False
         )
 
-    def get_admin_dashboard(self):
+    @classmethod
+    def get_admin_dashboard(cls):
         return admin_dashboard_dto(
-            total_user_cnt=self.get_total_user(),
-            tokens=self.get_token_info(),
-            rankings=self.get_user_ranking(),
-            asset_activate_status=self.get_asset_activate()
+            total_user_cnt=cls.get_total_user(),
+            tokens=cls.get_token_info(),
+            rankings=cls.get_user_ranking(),
+            asset_activate_status=cls.get_asset_activate()
         )
 
     @staticmethod
@@ -99,10 +101,6 @@ class AdminDashboardService:
 
     @staticmethod
     def is_admin_role():
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
-        # 사용자가 아니거나 역할이 admin
-        if not user or not user.roles:
-            return False
-        else:
-            return True
+        # 토큰 내부의 claims에서 roles 정보를 바로 가져옴 (DB 조회 제거)
+        claims = get_jwt()
+        return claims.get("roles", False)

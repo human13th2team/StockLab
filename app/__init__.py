@@ -7,7 +7,7 @@ from app.extensions import db, migrate, scheduler, jwt
 def create_app(config_name='dev'):
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
-    
+
     # DB, Migrate, JWT 초기화
     db.init_app(app)
     migrate.init_app(app, db)
@@ -35,6 +35,9 @@ def create_app(config_name='dev'):
     from app.api_clients import task_schedules
     # 워커 등록 및 실시간 리스너 시작
     with app.app_context():
+        from app.api_clients.auth import kis_auth
+        kis_auth.get_access_token()
+        kis_auth.get_approval_key()
         from app.features.execution import worker
         worker.start_redis_listener(app)
         from app.api_clients.websocket.ws_client import start_websocket_client
@@ -48,7 +51,7 @@ def create_app(config_name='dev'):
     
     # Blueprint 등록
     from app.features.auth import auth_bp
-    from app.features.market import market_bp
+    # from app.features.market import market_bp
     from app.features.trading import trading_bp
     from app.features.execution import execution_bp
     from app.features.analysis import analysis_bp
@@ -57,7 +60,7 @@ def create_app(config_name='dev'):
     from app.features.home import home_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(market_bp, url_prefix='/api/stocks')
+    # app.register_blueprint(market_bp, url_prefix='/api/stocks')
     app.register_blueprint(trading_bp, url_prefix='/api/orders')
     app.register_blueprint(execution_bp, url_prefix='/api/executions')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')

@@ -6,12 +6,12 @@ from app.extensions import scheduler
 from app.models.stock import Stock
 from app.extensions import redis_client
 
-@scheduler.task('cron', id='renewal_redis', hour='09', minute='50')
+@scheduler.task('interval', id='renewal_redis', seconds=40000)
 def renewal_redis():
-    if redis_client.ttl('access_token') < 80000:
+    if redis_client.ttl('access_token') < 6000:
         get_access_token()
         print("⏰ RENEW redis access_token by scheculer")
-    if redis_client.ttl('approval_key') < 80000:
+    if redis_client.ttl('approval_key') < 6000:
         get_approval_key()
         print("⏰ RENEW redis approval_key by scheculer")
     print("⏳ Interval Scheduling: renewal_redis")
