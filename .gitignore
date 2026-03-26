@@ -6,6 +6,8 @@ __pycache__/
 env/
 venv/
 ENV/
+.env
+.agents
 
 # Secrets
 .env
@@ -17,3 +19,10 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+# Release Tests
+Dockerfile
+docker-compose.yml
+
+# Logs
+app/features/analysis/*.log

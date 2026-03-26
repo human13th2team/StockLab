@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}분석 리포트{% endblock %}
+
+{% block styles %}
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .typing-cursor::after {
+        content: '|';
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .trend-badge {
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="loading-spinner" class="flex items-center justify-center p-40">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+</div>
+
+<div id="analysis-content" class="max-w-7xl mx-auto px-4 py-12 space-y-12 animate-fadeIn hidden">
+    <!-- 헤더 섹션 -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div>
+            <div class="flex items-center space-x-3 mb-3">
+                <span class="trend-badge">투자 분석 리포트</span>
+                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            </div>
+            <h1 class="text-4xl font-extrabold text-slate-900 leading-tight">
+                AI 기반 맞춤형 <span class="gradient-text">투자 트렌드 분석</span>
+            </h1>
+            <p class="mt-2 text-slate-500 font-medium text-lg">
+                <span id="user-nickname-display">사용자</span>님의 포트폴리오를 바탕으로 차트 추세를 분석하고 유사 종목을 추천합니다.
+            </p>
+        </div>
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 hidden lg:block">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-right">최근 업데이트</p>
+            <p id="last-updated" class="font-bold text-slate-700">-</p>
+        </div>
+    </header>
+
+    <!-- 핵심 요약 지표 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="p-8 bg-indigo-600 rounded-[32px] text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-8 transform group-hover:scale-110 transition-transform duration-500 opacity-20">
+                <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <p class="text-indigo-100 text-sm font-bold opacity-80 mb-2 uppercase tracking-widest">총 포트폴리오 가치</p>
+            <p id="stat-total-asset" class="text-4xl font-black">₩0</p>
+        </div>
+        <div class="p-8 bg-white rounded-[32px] border border-slate-100 shadow-sm flex flex-col justify-between">
+            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-2">순수익률</p>
+            <div class="flex items-baseline space-x-2">
+                <span id="stat-total-roi" class="text-4xl font-black">0%</span>
+                <span id="stat-roi-icon" class="text-sm font-bold">-</span>
+            </div>
+        </div>
+        <div class="p-8 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+            <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-2">보유 현금</p>
+            <p id="stat-cash" class="text-4xl font-black text-slate-800">₩0</p>
+        </div>
+    </div>
+
+    <!-- 메인 분석 영역: 리얼타임 트렌드 & AI 리포트 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <!-- 수익률 추이 (선 그래프) -->
+        <div class="bg-white p-10 rounded-[40px] border border-slate-100 shadow-lg relative h-[450px] flex flex-col">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-xl font-black text-slate-800">포트폴리오 누적 자산 추이</h3>
+                <span class="trend-badge">수익률 추이</span>
+            </div>
+            <div class="flex-grow">
+                <canvas id="trendChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 mt-6 text-center italic">* 최근 10거래일간의 종가 데이터를 바탕으로 산출된 자산 총액 변화입니다.</p>
+        </div>
+
+        <!-- AI 기술적 추천 리포트 -->
+        <div class="bg-slate-900 p-10 rounded-[40px] shadow-2xl text-white flex flex-col h-[450px]">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h3 class="text-xl font-black mb-1">AI 투자 성향 분석 리포트</h3>
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-tighter">포트폴리오 관리 어드바이저</p>
+                </div>
+                <button
+                    id="btn-ai-analysis"
+                    class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-sm font-black transition-all transform active:scale-95 shadow-indigo-600/10 hover:shadow-lg hover:shadow-indigo-500/20"
+                >
+                    AI 리포트 생성
+                </button>
+            </div>
+
+            <div id="ai-report-container" class="flex-grow bg-slate-800/50 p-6 rounded-3xl border border-slate-700/50 overflow-y-auto overflow-x-hidden min-h-0">
+                <div id="ai-advice-placeholder" class="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
+                    <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center shadow-inner">
+                        <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <p class="text-slate-400 text-sm font-medium">리포트 생성 버튼을 눌러<br />투자 성향 및 추천 종목을 확인하세요.</p>
+                </div>
+                <p id="ai-advice-content" class="text-sm leading-8 typing-cursor text-slate-100 whitespace-pre-wrap font-medium hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 상관관계 & 자산 배분 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <!-- 상관관계 히트맵 -->
+        <div class="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm">
+            <h3 class="text-lg font-black text-slate-800 mb-8 italic">자산 간 상관관계 히트맵</h3>
+            <div id="correlation-container" class="overflow-x-auto">
+                <table class="min-w-full border-collapse">
+                    <thead id="correlation-thead"></thead>
+                    <tbody id="correlation-tbody"></tbody>
+                </table>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-6">* 1.0에 가까울수록 동일한 방향, -1.0에 가까울수록 반대 방향으로 움직입니다.</p>
+        </div>
+
+        <!-- 자산 배분 -->
+        <div class="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm flex flex-col items-center relative">
+            <h3 class="text-lg font-black text-slate-800 self-start mb-8 italic">자산 배분 현황</h3>
+            <div class="relative w-full h-64">
+                <canvas id="allocationChart"></canvas>
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">분산 투자</span>
+                    <span class="text-2xl font-black text-slate-800 tracking-tighter">포트폴리오</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 보유 종목 리스트 -->
+    <div class="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
+        <div class="p-8 border-b border-slate-50">
+            <h3 class="text-xl font-bold text-slate-800">보유 종목 상세 리스트</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                    <tr>
+                        <th class="px-8 py-6">종목코드</th>
+                        <th class="px-8 py-4">수량</th>
+                        <th class="px-8 py-4 text-right">매입단가</th>
+                        <th class="px-8 py-4 text-right">수익률</th>
+                    </tr>
+                </thead>
+                <tbody id="holdings-table-body" class="divide-y divide-slate-100/50"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let portfolioData = null;
+        let trendChartInstance = null;
+        let allocationChartInstance = null;
+        let typingInterval = null;
+
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = "{{ url_for('auth.login_page') }}";
+            return;
+        }
+
+        async function fetchPortfolio() {
+            try {
+                const response = await fetch('/api/analysis/portfolio', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = "{{ url_for('auth.login_page') }}";
+                    return;
+                }
+                portfolioData = await response.json();
+                renderUI(portfolioData);
+            } catch (error) {
+                console.error("Error fetching portfolio:", error);
+            } finally {
+                document.getElementById('loading-spinner').classList.add('hidden');
+                document.getElementById('analysis-content').classList.remove('hidden');
+            }
+        }
+
+        function renderUI(data) {
+            // 헤더 정보
+            document.getElementById('user-nickname-display').textContent = data.user_nickname;
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+
+            // 요약 지표
+            document.getElementById('stat-total-asset').textContent = '₩' + data.total_asset.toLocaleString();
+            document.getElementById('stat-cash').textContent = '₩' + data.cash.toLocaleString();
+            
+            const roiElem = document.getElementById('stat-total-roi');
+            roiElem.textContent = (data.total_roi >= 0 ? '+' : '') + data.total_roi + '%';
+            roiElem.className = 'text-4xl font-black ' + (data.total_roi >= 0 ? 'text-emerald-600' : 'text-rose-600');
+            
+            const roiIcon = document.getElementById('stat-roi-icon');
+            roiIcon.textContent = data.total_roi >= 0 ? '▲' : '▼';
+            roiIcon.className = 'text-sm font-bold ' + (data.total_roi >= 0 ? 'text-emerald-400' : 'text-rose-400');
+
+            // 차트 렌더링
+            renderCharts(data);
+
+            // 상관관계 히트맵
+            renderCorrelationMatrix(data.correlation_matrix);
+
+            // 보유 종목 상세 리스트
+            renderHoldingsTable(data.holdings);
+        }
+
+        function renderCharts(data) {
+            // 1) 자산 배분 도넛 차트
+            const allocationCtx = document.getElementById('allocationChart').getContext('2d');
+            if (allocationChartInstance) allocationChartInstance.destroy();
+            allocationChartInstance = new Chart(allocationCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['현금', ...data.holdings.map(h => h.stock_name || h.ticker_code)],
+                    datasets: [{
+                        data: [data.cash, ...data.holdings.map(h => h.current_value)],
+                        backgroundColor: [
+                            '#e2e8f0', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
+                            '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#64748b'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                    },
+                    cutout: '75%'
+                }
+            });
+
+            // 2) 수익률 추이 선 그래프
+            if (data.return_trend) {
+                const trendCtx = document.getElementById('trendChart').getContext('2d');
+                if (trendChartInstance) trendChartInstance.destroy();
+                trendChartInstance = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.return_trend.labels,
+                        datasets: [{
+                            label: '포트폴리오 총액',
+                            data: data.return_trend.data,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#6366f1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { ticks: { callback: v => v.toLocaleString() + '원' } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        function renderCorrelationMatrix(matrixData) {
+            if (!matrixData || !matrixData.labels) return;
+            const thead = document.getElementById('correlation-thead');
+            const tbody = document.getElementById('correlation-tbody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            // 헤더 생성
+            const headRow = document.createElement('tr');
+            headRow.innerHTML = '<th class="p-2"></th>';
+            matrixData.labels.forEach(l => {
+                const th = document.createElement('th');
+                th.className = 'p-2 text-[10px] font-bold text-slate-400';
+                th.textContent = l;
+                headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+
+            // 본문 생성
+            matrixData.matrix.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                const rowHeader = document.createElement('th');
+                rowHeader.className = 'p-2 text-[10px] font-bold text-slate-400 text-left';
+                rowHeader.textContent = matrixData.labels[i];
+                tr.appendChild(rowHeader);
+
+                row.forEach((val, j) => {
+                    const intense = Math.abs(val);
+                    const bgColor = val > 0 ? `rgba(99, 102, 241, ${intense})` : `rgba(244, 63, 94, ${intense})`;
+                    const td = document.createElement('td');
+                    td.className = 'p-4 text-center border border-white rounded-lg transition-transform hover:scale-110';
+                    td.style.backgroundColor = bgColor;
+                    td.innerHTML = `<span class="text-[10px] font-bold ${intense > 0.5 ? 'text-white' : 'text-slate-800'}">${val.toFixed(2)}</span>`;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderHoldingsTable(holdings) {
+            const tbody = document.getElementById('holdings-table-body');
+            tbody.innerHTML = '';
+            holdings.forEach(stock => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/50 transition-colors group';
+                tr.innerHTML = `
+                    <td class="px-8 py-6 font-black text-slate-800 text-lg group-hover:text-indigo-600 transition-colors underline decoration-indigo-200 decoration-2 underline-offset-4">${stock.stock_name || stock.ticker_code}</td>
+                    <td class="px-8 py-6 text-slate-600 font-bold">${stock.qty}</td>
+                    <td class="px-8 py-6 text-right text-slate-600 font-medium">₩${stock.avg_price.toLocaleString()}</td>
+                    <td class="px-8 py-6 text-right">
+                        <div class="flex flex-col items-end">
+                            <span class="text-xl font-black ${stock.roi >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+                                ${stock.roi >= 0 ? '+' : ''}${stock.roi}%
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-300">₩${stock.current_price.toLocaleString()}</span>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const btnAI = document.getElementById('btn-ai-analysis');
+        btnAI.addEventListener('click', async function() {
+            btnAI.disabled = true;
+            btnAI.textContent = '분석 중...';
+            btnAI.classList.replace('bg-indigo-600', 'bg-slate-800');
+            btnAI.classList.add('text-slate-500', 'cursor-not-allowed');
+
+            const placeholder = document.getElementById('ai-advice-placeholder');
+            const content = document.getElementById('ai-advice-content');
+            content.textContent = '';
+            content.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+
+            if (typingInterval) clearInterval(typingInterval);
+
+            try {
+                const response = await fetch('/api/analysis/ai/recommend', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                const adviceText = data.ai_advice_text || "분석 결과를 가져올 수 없습니다.";
+
+                let i = 0;
+                typingInterval = setInterval(() => {
+                    content.textContent += adviceText[i] || '';
+                    i++;
+                    if (i >= adviceText.length) {
+                        clearInterval(typingInterval);
+                        btnAI.disabled = false;
+                        btnAI.textContent = 'AI 리포트 생성';
+                        btnAI.classList.replace('bg-slate-800', 'bg-indigo-600');
+                        btnAI.classList.remove('text-slate-500', 'cursor-not-allowed');
+                    }
+                }, 15);
+            } catch (error) {
+                content.textContent = "분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+                btnAI.disabled = false;
+                btnAI.textContent = 'AI 리포트 생성';
+            }
+        });
+
+        // 초기 실행
+        fetchPortfolio();
+    });
+</script>
+{% endblock %}

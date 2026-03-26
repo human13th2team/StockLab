@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}로그인 - StockLab{% endblock %}
+
+{% block styles %}
+<style>
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .input-field {
+        transition: all 0.3s ease;
+    }
+    .input-field:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-8">
+    <div class="text-center mb-10">
+        <h2 class="text-4xl font-extrabold text-slate-800 mb-2">반갑습니다</h2>
+        <p class="text-slate-500">당신의 <span class="text-indigo-600 font-bold">포트폴리오</span>를 확인하세요.</p>
+    </div>
+
+    <form id="login-form" class="space-y-6">
+        <div>
+            <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">이메일</label>
+            <input type="email" id="email" name="email" required 
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                placeholder="example@stocklab.com">
+        </div>
+
+        <div>
+            <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">비밀번호</label>
+            <input type="password" id="password" name="password" required 
+                class="input-field w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                placeholder="••••••••">
+        </div>
+
+        <button type="submit" 
+            class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1 active:scale-95">
+            로그인하기
+        </button>
+
+        <p class="text-center text-sm text-slate-500 mt-6 md:mt-10">
+            아직 회원이 아니신가요? <a href="{{ url_for('auth.signup_page') }}" class="text-indigo-600 font-bold hover:underline">가입하고 100만 원 받기</a>
+        </p>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('user_nickname', data.user.nickname);
+            alert('환영합니다, ' + data.user.nickname + '님!');
+            window.location.href = "{{ url_for('main.index') }}";
+        } else {
+            alert('로그인 실패: ' + data.msg);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('로그인 중 서버 오류가 발생했습니다.');
+    }
+});
+</script>
+{% endblock %}
