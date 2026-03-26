@@ -108,21 +108,25 @@
             height: 340px;
         }
 
-        .interval-btn {
-            padding: 4px 10px;
-            border-radius: 4px;
+        .interval-btn-toss {
+            padding: 4px 12px;
+            border-radius: 6px;
             font-size: 0.75rem;
+            font-weight: 600;
             cursor: pointer;
-            border: 1px solid #0f3460;
-            color: #a0aec0;
-            transition: all 0.15s;
+            color: #718096;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .interval-btn.active,
-        .interval-btn:hover {
-            background: #ef4444;
+        .interval-btn-toss.active {
+            background: #2D3748;
             color: white;
-            border-color: #ef4444;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .interval-btn-toss:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: #CBD5E0;
         }
 
         .price-protect-notice {
@@ -202,8 +206,13 @@
         }
 
         @keyframes flash-green {
-            0% { background-color: rgba(34, 197, 94, 0.3); }
-            100% { background-color: transparent; }
+            0% {
+                background-color: rgba(34, 197, 94, 0.3);
+            }
+
+            100% {
+                background-color: transparent;
+            }
         }
 
         .flash-update {
@@ -236,7 +245,8 @@
                 <div class="flex flex-col items-end mr-4">
                     <div class="flex items-center space-x-2">
                         <span class="text-[10px] text-gray-500">사용자</span>
-                        <span id="user-nickname" class="user-nickname-display text-sm font-bold text-blue-400">게스트</span>
+                        <span id="user-nickname"
+                            class="user-nickname-display text-sm font-bold text-blue-400">게스트</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="text-[10px] text-gray-500">가용현금</span>
@@ -244,12 +254,13 @@
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="text-[10px] text-gray-400">주문중(동결)</span>
-                        <span id="user-deposit" class="user-deposit-display text-sm font-semibold text-orange-300">0원</span>
+                        <span id="user-deposit"
+                            class="user-deposit-display text-sm font-semibold text-orange-300">0원</span>
                     </div>
                 </div>
                 <a href="/" class="text-gray-400 hover:text-white text-sm transition-colors">← 대시보드</a>
-                <span id="nav-current-price" class="text-2xl font-bold price-up">75,000</span>
-                <span id="nav-change-rate" class="text-sm price-up font-medium">▲ +1.2%</span>
+                <span id="nav-current-price" class="text-2xl font-bold">-</span>
+                <span id="nav-change-rate" class="text-sm font-medium"></span>
             </div>
         </nav>
     </header>
@@ -260,52 +271,52 @@
         <!-- 왼쪽: 차트 + 종목 정보 (8 cols) -->
         <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
 
-            <!-- 종목 헤더 정보 -->
-            <div class="card p-4 flex items-center justify-between">
-                <div>
-                    <h1 id="stock-name-header" class="text-xl font-bold text-white">{{ stock_name }}</h1>
-                    <p id="ticker-code-header" class="text-xs text-gray-400 mt-0.5">KRX: {{ ticker }}</p>
-                </div>
-                <div class="text-right">
-                    <div class="flex items-center justify-end space-x-2">
-                        <span id="live-indicator" class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <p id="current-price-display" class="text-3xl font-extrabold price-up">75,000</p>
-                    </div>
-                    <p id="price-change-display" class="text-sm font-medium text-red-400">+1,500 (+2.04%)</p>
-                    <div class="flex items-center justify-end space-x-2 mt-1">
-                        <span id="socket-status-dot" class="h-1.5 w-1.5 rounded-full bg-gray-500 shadow-[0_0_5px_rgba(0,0,0,0.5)]"></span>
-                        <p id="socket-status-text" class="text-[10px] text-gray-500">연결 확인 중...</p>
-                    </div>
-                    <p id="last-updated-time" class="text-[10px] text-gray-500 mt-1">최근 갱신: --:--:--</p>
-                </div>
-                <div class="grid grid-cols-3 gap-4 text-center text-sm">
+            <!-- 주가 정보 및 차트 통합 카드 -->
+            <div class="card overflow-hidden">
+                <!-- 상단 종목 정보 헤더 -->
+                <div class="p-6 pb-2 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
-                        <p class="text-gray-500 text-xs">시가</p>
-                        <p id="open-price" class="text-white font-medium">74,100</p>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h1 id="stock-name-header" class="text-2xl font-bold text-white tracking-tight">{{
+                                stock_name }}</h1>
+                            <span id="ticker-code-header"
+                                class="px-1.5 py-0.5 bg-gray-800 text-gray-400 text-[10px] rounded uppercase font-mono tracking-wider">{{
+                                ticker }}</span>
+                        </div>
+                        <div class="flex items-baseline gap-3">
+                            <span id="current-price-display"
+                                class="text-4xl font-black text-white tracking-tighter">-</span>
+                            <span id="price-change-display" class="text-lg font-bold flex items-center gap-1">
+                                <span class="text-xs text-gray-600">데이터 로딩 중...</span>
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">고가</p>
-                        <p id="high-price" class="price-up font-medium">75,800</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">저가</p>
-                        <p id="low-price" class="price-down font-medium">73,900</p>
-                    </div>
-                </div>
-                <!-- 거래량 정보 삭제됨 -->
-            </div>
 
-            <!-- 캔들 차트 -->
-            <div class="card p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold text-gray-300">실시간 차트</h2>
-                    <div class="flex space-x-2">
-                        <button class="interval-btn active" onclick="setInterval_('1m')">1분</button>
-                        <button class="interval-btn" onclick="setInterval_('5m')">5분</button>
-                        <button class="interval-btn" onclick="setInterval_('1d')">일봉</button>
+                    <div class="flex flex-col items-end gap-2">
+                        <!-- 인터벌 선택기 -->
+                        <div class="flex space-x-1 bg-gray-900/50 p-1 rounded-xl border border-gray-800/50">
+                            <button class="interval-btn-toss active" onclick="setInterval_('1m')">1분</button>
+                            <button class="interval-btn-toss" onclick="setInterval_('5m')">5분</button>
+                            <button class="interval-btn-toss" onclick="setInterval_('1d')">일봉</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="live-indicator"
+                                class="flex h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                            <p id="socket-status-text" class="text-[10px] text-gray-500 font-medium tracking-tight">실시간
+                                연결됨</p>
+                        </div>
                     </div>
                 </div>
-                <div id="chart-container"></div>
+
+                <!-- 차트 출력 영역 -->
+                <div id="chart-container" class="w-full h-[400px]"></div>
+
+                <!-- 하단 부가 정보 (시간 등) -->
+                <div
+                    class="px-6 py-3 border-t border-gray-800/30 flex justify-between items-center text-[10px] text-gray-500">
+                    <span id="last-updated-time">최근 갱신: --:--:--</span>
+                    <span class="font-mono opacity-50">LIGHTWEIGHT_CHART_V4</span>
+                </div>
             </div>
 
             <!-- 나의 보유 주식 현황 -->
@@ -314,7 +325,9 @@
                     <h2 class="text-sm font-semibold text-gray-300 flex items-center gap-2">
                         <span class="p-1 bg-blue-500/20 rounded">💰</span> 나의 보유 주식
                     </h2>
-                    <button onclick="fetchHoldings()" class="text-[10px] text-blue-400 hover:text-blue-300 transition-colors bg-blue-400/10 px-2 py-1 rounded">새로고침 ↻</button>
+                    <button onclick="fetchHoldings()"
+                        class="text-[10px] text-blue-400 hover:text-blue-300 transition-colors bg-blue-400/10 px-2 py-1 rounded">새로고침
+                        ↻</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-xs">
@@ -375,7 +388,7 @@
                     <!-- 주문 가격 -->
                     <div id="price-field">
                         <label class="text-xs text-gray-500 block mb-1">주문 가격 (원)</label>
-                        <input type="number" id="order-price" placeholder="0" value="75000" min="0" step="100">
+                        <input type="number" id="order-price" placeholder="금액 입력" value="" min="0" step="100">
                         <div id="price-protect-notice" class="price-protect-notice">
                             ⚠️ 현재가 보호: 시장가로 즉시 체결됩니다.
                         </div>
@@ -396,7 +409,7 @@
                     <!-- 예상 체결금액 -->
                     <div class="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
                         <span class="text-xs text-gray-400">예상 체결금액</span>
-                        <span id="total-amount" class="text-white font-bold">75,000 원</span>
+                        <span id="total-amount" class="text-white font-bold">0 원</span>
                     </div>
 
                     <!-- 주문 버튼 -->
@@ -436,15 +449,16 @@
         let currentPrice = 0;
         let currentTab = 'buy';
         let currentInterval = '1m';
-        let chart, baselineSeries, volumeSeries;
+        let chart, areaSeries;
         let chartUpdateTimer = null;
         let lastBar = null;
+        let allPrices = {}; // 모든 종목의 실시간 가격 저장소
 
 
         // Socket.IO 연결 (현재 호스트와 포트 자동 감지)
         const socketUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
         console.log('🔌 [Socket.IO] Attempting connection to:', socketUrl);
-        
+
         const socket = io(socketUrl, {
             path: '/socket.io',
             transports: ['websocket', 'polling'],
@@ -476,7 +490,7 @@
             console.error('❌ [Socket.IO] Disconnected!');
             const indicator = document.getElementById('live-indicator');
             if (indicator) indicator.className = 'flex h-2 w-2 rounded-full bg-red-500';
-            
+
             const statusTxt = document.getElementById('socket-status-text');
             const statusDot = document.getElementById('socket-status-dot');
             if (statusTxt) {
@@ -495,23 +509,24 @@
         socket.on('price_update', (data) => {
             console.log(`📡 [Socket.IO] Price Update: ${data.ticker_code} = ${data.price.toLocaleString()}`);
             try {
+                // 전역 시세 저장소 업데이트
+                allPrices[data.ticker_code] = data.price;
+
                 if (data.ticker_code === currentTicker) {
-                    const prevPrice = currentPrice; // 색상 결정을 위해 이전 가격 보관
                     updateCurrentPrice(data.price);
-                    
-                    if (baselineSeries && chart) {
-                        const now = Math.floor(Date.now() / 1000);
-                        baselineSeries.update({
-                            time: now,
+
+                    if (areaSeries && lastBar) {
+                        // 실시간 영역 업데이트 (time과 value 형식)
+                        areaSeries.update({
+                            time: lastBar.time,
                             value: data.price
                         });
-
-                        // 거래량 히스토그램 업데이트 삭제됨
-                        chart.timeScale().scrollToRealTime();
+                        // lastBar 데이터 구조 유지 (OHLC 기반일 수 있으므로)
+                        lastBar = { ...lastBar, close: data.price };
                     }
                 }
-                
-                // 보유 주식 중 해당 종목이 있으면 목록 갱신
+
+                // 보유 주식 목록 실시간 갱신 (해당 종목이 포함되어 있을 때만)
                 if (myHoldings && myHoldings.some(h => h.ticker_code === data.ticker_code)) {
                     renderHoldings();
                 }
@@ -528,7 +543,7 @@
                 const res = await fetch(`/api/stocks/quote/${ticker}`);
                 if (!res.ok) throw new Error('데이터를 불러올 수 없습니다.');
                 const data = await res.json();
-                
+
                 // KIS API 필드 -> 전역 상태 업데이트 (안전한 파싱)
                 currentPrice = parseInt(data.stck_prpr) || 0;
                 const openPri = parseInt(data.stck_oprc) || 0;
@@ -538,19 +553,16 @@
                 const change = parseInt(data.prdy_vrss) || 0;
                 const rate = parseFloat(data.prdy_ctrt) || 0.0;
 
-                // UI 업데이트
-                if (document.getElementById('open-price')) document.getElementById('open-price').textContent = openPri.toLocaleString();
-                if (document.getElementById('high-price')) document.getElementById('high-price').textContent = highPri.toLocaleString();
-                if (document.getElementById('low-price')) document.getElementById('low-price').textContent = lowPri.toLocaleString();
-                if (document.getElementById('volume-display')) document.getElementById('volume-display').textContent = vol.toLocaleString();
-                
+                // UI 업데이트 (현재가/변동률은 별도 함수에서 처리)
+                // 시가, 고가, 저가 등은 UI에서 제외됨
+
                 // 전일 종가 계산 및 캐시 (실시간 업데이트시 변동률 계산용)
                 stockInfoCache[ticker] = {
                     basePrice: currentPrice - change
                 };
 
                 updateCurrentPrice(currentPrice, change, rate);
-                
+
                 return data;
             } catch (e) {
                 console.error('❌ 시세 조회 오류:', e);
@@ -562,23 +574,23 @@
         function initChart() {
             const container = document.getElementById('chart-container');
             if (chart) {
-                try { chart.remove(); } catch(e) {}
+                try { chart.remove(); } catch (e) { }
                 container.innerHTML = '';
             }
-            
+
             chart = LightweightCharts.createChart(container, {
                 width: container.offsetWidth || 800,
-                height: 340,
+                height: 400,
                 layout: {
-                    background: { color: '#000000' }, 
-                    textColor: '#abb0b8', 
+                    background: { color: 'transparent' },
+                    textColor: '#94a3b8',
                 },
                 grid: {
-                    vertLines: { visible: false }, 
+                    vertLines: { visible: false },
                     horzLines: { visible: false },
                 },
                 rightPriceScale: {
-                    borderColor: 'transparent', 
+                    borderColor: 'transparent',
                     visible: true,
                     autoScale: true,
                     scaleMargins: {
@@ -593,18 +605,14 @@
                 },
             });
 
-            // 토스 스타일 주식 그래프 (등락 기준선 배경 채우기)
-            baselineSeries = chart.addBaselineSeries({
-                baseValue: { type: 'price', price: currentPrice || 0 },
-                topLineColor: '#ff455e', 
-                topFillColor1: 'rgba(255, 69, 94, 0.4)',
-                topFillColor2: 'rgba(255, 69, 94, 0.05)',
-                bottomLineColor: '#3182f6', 
-                bottomFillColor1: 'rgba(49, 130, 246, 0.05)',
-                bottomFillColor2: 'rgba(49, 130, 246, 0.4)',
-                lineWidth: 4,
+            // 1. 영역 시리즈 (Area Series)로 복구 (토스 스타일)
+            areaSeries = chart.addAreaSeries({
+                lineColor: '#3182F6',
+                topColor: 'rgba(49, 130, 246, 0.5)',
+                bottomColor: 'rgba(49, 130, 246, 0.0)',
+                lineWidth: 2,
             });
-            
+
             /* 
             volumeSeries = chart.addHistogramSeries({
                 color: 'rgba(150, 150, 150, 0.2)', 
@@ -642,7 +650,8 @@
                 const close = Math.max(open + change, basePrice * 0.5);
                 const high = Math.max(open, close) + Math.random() * basePrice * 0.005;
                 const low = Math.min(open, close) - Math.random() * basePrice * 0.005;
-                data.push({ time, open: Math.round(open), high: Math.round(high), low: Math.round(low), close: Math.round(close) });
+                const volume = Math.floor(Math.random() * 500000) + 100000;
+                data.push({ time, open: Math.round(open), high: Math.round(high), low: Math.round(low), close: Math.round(close), volume });
                 price = close;
             }
             return data;
@@ -655,73 +664,49 @@
             const minutes = intervalMap[currentInterval] || 1;
             const count = currentInterval === '1d' ? 90 : 60;
 
-            // 실시간 현재가 먼저 가져오기
+            // 실시간 현재가 먼저 가져오기 (기준가 파악용)
             await fetchCurrentData(currentTicker);
+
+            // 기준가 (전일 종가) 활용 가이드라인 추가
+            const basePrice = stockInfoCache[currentTicker]?.basePrice || currentPrice;
+
+            // 기존 기준선 가격선 제거 (있는 경우)
+            if (window.basePriceLine) {
+                try { areaSeries.removePriceLine(window.basePriceLine); } catch (e) { }
+            }
+            window.basePriceLine = areaSeries.createPriceLine({
+                price: basePrice,
+                color: '#444455',
+                lineWidth: 1,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
+                axisLabelVisible: true,
+                title: '전일종가',
+            });
 
             try {
                 const res = await fetch(`/api/stocks/history/${currentTicker}?interval=${minutes}`);
-                const historyData = await res.json();
-                
-                if (historyData && historyData.length > 0) {
-                    const lineData = historyData.map(d => ({ time: d.time, value: d.close }));
-                    baselineSeries.setData(lineData);
-                    baselineSeries.applyOptions({ baseValue: { type: 'price', price: historyData[0].open } });
-                    
-                    /*
-                    const vData = historyData.map(d => ({
-                        time: d.time,
-                        value: d.volume || (Math.random() * 100000),
-                        color: d.close >= d.open ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'
-                    }));
-                    volumeSeries.setData(vData);
-                    */
-                    
-                    lastBar = historyData[historyData.length - 1];
-                } else {
-                    const base = currentPrice > 0 ? currentPrice : 50000;
-                    const dummyData = generateCandleData(base, count, minutes);
-                    
-                    const lineData = dummyData.map(d => ({ time: d.time, value: d.close }));
-                    baselineSeries.setData(lineData);
-                    baselineSeries.applyOptions({ baseValue: { type: 'price', price: base } });
-                    
-                    /*
-                    const vData = dummyData.map(d => ({
-                        time: d.time,
-                        value: Math.random() * 100000,
-                        color: d.close >= d.open ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'
-                    }));
-                    volumeSeries.setData(vData);
-                    */
-                    
-                    lastBar = dummyData[dummyData.length - 1];
+                let historyData = await res.json();
+
+                if (!historyData || historyData.length === 0) {
+                    historyData = generateCandleData(basePrice, count, minutes);
                 }
+
+                // 데이터 세팅 (영역형 데이터 형식 {time, value}로 변환)
+                const areaData = historyData.map(d => ({
+                    time: d.time,
+                    value: d.close || d.value // API나 mock data의 close 값을 사용
+                }));
+                areaSeries.setData(areaData);
+                lastBar = historyData[historyData.length - 1];
             } catch (err) {
                 console.error('❌ 차트 데이터 로드 실패:', err);
-                const dummyData = generateCandleData(currentPrice, count, minutes);
-                const lineData = dummyData.map(d => ({ time: d.time, value: d.close }));
-                baselineSeries.setData(lineData);
             }
             chart.timeScale().fitContent();
-
-            // 실시간 업데이트는 Socket.IO로 처리하므로 타이머 제거
-            /*
-            chartUpdateTimer = setInterval(() => {
-                const lastBar = data[data.length - 1];
-                const newClose = Math.round(lastBar.close * (1 + (Math.random() - 0.49) * 0.003));
-                const newHigh = Math.max(lastBar.high, newClose);
-                const newLow = Math.min(lastBar.low, newClose);
-                const updated = { ...lastBar, close: newClose, high: newHigh, low: newLow };
-                data[data.length - 1] = updated;
-                candleSeries.update(updated);
-                updateCurrentPrice(newClose);
-            }, 5000);
-            */
         }
 
         function setInterval_(iv) {
             currentInterval = iv;
-            document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.interval-btn-toss').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             loadChartData();
         }
@@ -730,7 +715,7 @@
         function updateCurrentPrice(price, changeArg, rateArg) {
             const prev = currentPrice;
             currentPrice = price;
-            
+
             // 인자가 있으면 그것을 쓰고, 없으면 (Socket.IO 등에서) 계산
             const change = changeArg !== undefined ? changeArg : (price - (stockInfoCache[currentTicker]?.basePrice || price));
             const rate = rateArg !== undefined ? rateArg : ((change / (stockInfoCache[currentTicker]?.basePrice || price)) * 100).toFixed(2);
@@ -739,14 +724,14 @@
             const cls = change >= 0 ? 'price-up' : 'price-down';
 
             const formatted = price.toLocaleString();
-            
+
             // 메인 가격 업데이트
             ['nav-current-price', 'current-price-display'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.textContent = formatted;
                     el.className = el.className.replace(/price-(up|down)/g, '') + ' ' + cls;
-                    
+
                     // 전조등 효과 (업데이트 시각화)
                     el.classList.remove('flash-update');
                     void el.offsetWidth; // 리플로우 강제 유발
@@ -871,7 +856,7 @@
             try {
                 const res = await fetch('/api/orders', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + token
                     },
@@ -925,7 +910,7 @@
         async function cancelOrder(orderId) {
             const token = localStorage.getItem('access_token');
             try {
-                const res = await fetch(`/api/orders/${orderId}`, { 
+                const res = await fetch(`/api/orders/${orderId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': 'Bearer ' + token
@@ -1111,7 +1096,7 @@
             document.getElementById('nav-ticker').textContent = ticker;
             document.getElementById('stock-name-header').textContent = currentStockName;
             document.getElementById('ticker-code-header').textContent = `KRX: ${ticker}`;
-            
+
             // 2. 검색창 초기화
             searchInput.value = '';
             searchResults.classList.add('hidden');
@@ -1126,7 +1111,7 @@
             renderOrderBook(); // 호가창 초기화
             fetchHoldings();   // 보유 주식 갱신 (수익률 반영용)
             updateTotalAmount(); // 주문 섹션 갱신
-            
+
             showAlert(`📈 ${currentStockName} 종목으로 전환되었습니다.`, 'green');
         }
 
@@ -1166,10 +1151,10 @@
             }
 
             listEl.innerHTML = myHoldings.map(h => {
-                // 현재가를 전역 변수나 캐시에서 가져옴 (우선 현재 보고있는 종목이면 실시간 반영)
-                const livePrice = (h.ticker_code === currentTicker) ? currentPrice : h.avg_price; // 임시: 다른 종목은 평단가와 동일하게 표시 (추후 보완)
+                // 실시간 시세 저장소(allPrices)에서 가격을 가져오고, 없으면 평단가로 표시
+                const livePrice = allPrices[h.ticker_code] || h.avg_price;
                 const profit = (livePrice - h.avg_price) * h.total_qty;
-                const profitRate = ((livePrice - h.avg_price) / h.avg_price * 100).toFixed(2);
+                const profitRate = h.avg_price > 0 ? ((livePrice - h.avg_price) / h.avg_price * 100).toFixed(2) : '0.00';
                 const cls = profit >= 0 ? 'text-red-400' : 'text-blue-400';
 
                 return `
@@ -1206,7 +1191,7 @@
                 });
                 if (!res.ok) return;
                 const data = await res.json();
-                
+
                 // 클라이언트 형식으로 변환
                 pendingOrders = data.map(o => ({
                     orderId: o.order_id,
@@ -1219,9 +1204,9 @@
                     expiresAt: new Date(o.expires_at).getTime()
                 }));
                 renderPendingOrders();
-                
+
                 if (pendingOrders.length > 0 && !timerInterval) {
-                   timerInterval = setInterval(tickTimers, 1000);
+                    timerInterval = setInterval(tickTimers, 1000);
                 }
             } catch (e) {
                 console.error('미체결 주문 조회 오류:', e);
@@ -1229,7 +1214,7 @@
         }
 
         // ─── 유저 정보 로드 ──────────────────────────────────────────
-         async function loadUserInfo() {
+        async function loadUserInfo() {
             const token = localStorage.getItem('access_token');
             if (!token) return;
 
@@ -1241,7 +1226,7 @@
                 if (res.ok) {
                     const cashEls = document.querySelectorAll('.user-cash-display');
                     cashEls.forEach(el => el.textContent = data.cash.toLocaleString() + '원');
-                    
+
                     const depositEls = document.querySelectorAll('.user-deposit-display');
                     depositEls.forEach(el => el.textContent = (data.deposit || 0).toLocaleString() + '원');
 
@@ -1254,7 +1239,7 @@
         }
 
         // ─── 초기화 ───────────────────────────────────────────────────
-        window.addEventListener('load', async () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // URL 파라미터 먼저 파싱
             const urlParams = new URLSearchParams(window.location.search);
             const tickerParam = urlParams.get('ticker');
@@ -1262,12 +1247,16 @@
                 currentTicker = tickerParam;
             }
 
+            // 시세 데이터를 가장 먼저 가져와서 헤더라도 바로 표시되게 함
+            fetchCurrentData(currentTicker).then(() => {
+                updateTotalAmount(); // 가격 로드 후 주문 금액 갱신
+            });
+
             initChart();
-            await loadUserInfo();
-            await fetchHoldings();
-            await fetchPendingOrders();
+            loadUserInfo();
+            fetchHoldings();
+            fetchPendingOrders();
             renderOrderBook();
-            updateTotalAmount();
 
             // 주기적 갱신 설정
             setInterval(renderOrderBook, 10000);
