@@ -1,4 +1,5 @@
 from flask import jsonify, request, render_template
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import analysis_bp
 from .services import PortfolioService, AnalysisAIService, FundingService
 from app.extensions import scheduler
@@ -30,48 +31,39 @@ def report():
     return render_template('features/analysis/report.html')
 
 @analysis_bp.route('/portfolio', methods=['GET'])
+@jwt_required(optional=True)
 def get_portfolio():
     """
     내 포트폴리오 현황 조회 (실제 데이터베이스 기반)
-    데이터가 없는 경우에도 기본 구조를 반환하여 프론트엔드 오류를 방지함.
+    인증된 사용자의 ID를 JWT를 통해 가져옵니다.
     """
-    user_id = 1  # 테스트용 고정 ID
     try:
-        result = portfolio_service.get_user_portfolio(user_id)
+        # JWT가 있으면 그 ID를 쓰고, 없거나 쿼리 파라미터가 있으면 해당 ID 사용 (테스트용)
+        user_id = request.args.get('user_id', get_jwt_identity())
+        if not user_id:
+            user_id = 2 # 기본값 2번 유저 (user1)로 설정하여 테스트 편의 제공
         
-        # 이동평균선(MA) 트렌드 데이터 생성 (그래프 시각화용)
-        # 실제 데이터가 있으면 이를 기반으로, 없으면 빈 트렌드를 반환
-        if not result.get('holdings'):
-            result["trend_data"] = {
-                "labels": ["-", "-", "-", "-", "-", "현재"],
-                "ma5": [0, 0, 0, 0, 0, 0],
-                "ma20": [0, 0, 0, 0, 0, 0],
-                "ma60": [0, 0, 0, 0, 0, 0]
-            }
-        else:
-            # 실시간 데이터가 있는 경우 가상의 트렌드 (실제 API 부재 시 시뮬레이션)
-            # 향후 KisApi에서 과거 데이터를 가져오도록 확장 가능
-            result["trend_data"] = {
-                "labels": ["10일전", "8일전", "6일전", "4일전", "2일전", "현재"],
-                "ma5": [72000, 73500, 75000, 76800, 77500, 78500],
-                "ma20": [71000, 71500, 72000, 72800, 73500, 74200],
-                "ma60": [70000, 70200, 70500, 70800, 71200, 71500]
-            }
-            
+        print(f"DEBUG: requested user_id={user_id}, type={type(user_id)}")
+        result = portfolio_service.get_user_portfolio(user_id)
+        print(f"DEBUG: result nickname={result.get('user_nickname')}")
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
     return jsonify(result)
 
 @analysis_bp.route('/ai/recommend', methods=['POST'])
+@jwt_required(optional=True)
 def ai_recommend():
     """
     실제 데이터베이스 데이터 기반 AI 추천 API
+    인증된 사용자의 ID를 JWT를 통해 가져옵니다.
     """
-    user_id = 1
-    
-    # 1. 포트폴리오 데이터 확보 (실제 DB)
     try:
+        user_id = request.args.get('user_id', get_jwt_identity())
+        if not user_id:
+            user_id = 2 # 기본값 2번 유저 (user1)
+            
+        # 1. 포트폴리오 데이터 확보 (실제 DB)
         portfolio_data = portfolio_service.get_user_portfolio(user_id)
     except Exception as e:
         return jsonify({"status": "error", "message": f"DB 조회 실패: {str(e)}"}), 500

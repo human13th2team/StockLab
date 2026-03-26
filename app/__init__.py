@@ -39,8 +39,11 @@ def create_app(config_name='dev'):
     from app.api_clients import task_schedules
     # 워커 등록 및 실시간 리스너 시작
     with app.app_context():
-        from app.features.execution import worker
-        worker.start_redis_listener(app)
+        try:
+            from app.features.execution import worker
+            worker.start_redis_listener(app)
+        except Exception as e:
+            app.logger.warning(f"⚠️ Redis 리스너를 시작할 수 없습니다 (무시됨): {e}")
 
     if not scheduler.running:
         scheduler.start()
