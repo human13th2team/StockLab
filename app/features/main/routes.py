@@ -1,5 +1,5 @@
-from flask import render_template, request, session
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import render_template, request, session, redirect, url_for
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 from . import main_bp
 from app.models.stock import Stock
 from app.features.home.services import HomeService
@@ -11,7 +11,8 @@ def index():
         "features/home/index.html",
         stocks=HomeService.get_stock_list(period),
         current_time=HomeService.get_current_time(),
-        period=period
+        period=period,
+        active_menu='dashboard'
     )
 
 @main_bp.route('/trading')
@@ -42,3 +43,8 @@ def trading():
                           stock_name=stock_name, 
                           price_data=price_data,
                           stocks=all_stocks)
+
+@main_bp.route('/control')
+def control():
+    """투자 제어 (주문/체결 내역) 화면"""
+    return render_template('features/execution/history.html', active_menu='control')

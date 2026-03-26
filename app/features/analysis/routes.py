@@ -28,7 +28,7 @@ check_startup_funding()
 
 @analysis_bp.route('/', methods=['GET'])
 def report():
-    return render_template('features/analysis/report.html')
+    return render_template('features/analysis/report.html', active_menu='report')
 
 @analysis_bp.route('/portfolio', methods=['GET'])
 @jwt_required(optional=True)

@@ -445,9 +445,9 @@
         <div class="logo-title">StockLab</div>
         <div class="logo-subtitle">PROFESSIONAL SIMULATION</div>
 
-        <a href="#" class="menu-item active">📊 실시간 대시보드</a>
-        <a href="{{ url_for('analysis.report') }}" class="menu-item">👤 마이페이지</a>
-        <a href="#" class="menu-item">📈 투자 제어</a>
+        <a href="/" class="menu-item {{ 'active' if active_menu == 'dashboard' else '' }}">📊 실시간 대시보드</a>
+        <a href="{{ url_for('analysis.report') }}" class="menu-item {{ 'active' if active_menu == 'report' else '' }}">👤 마이페이지</a>
+        <a href="/control" class="menu-item {{ 'active' if active_menu == 'control' else '' }}">📈 투자 제어</a>
         <a href="{{ url_for('admin.get_dashboard') }}" class="menu-item">⚙️ 관리자 콘솔</a>
 
         <div style="margin-top: auto;" id="auth-menu-container">
