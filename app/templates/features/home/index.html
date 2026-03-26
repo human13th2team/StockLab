@@ -648,7 +648,7 @@
             }
 
             try {
-                const response = await fetch('/api/auth/me', {
+                const response = await fetch('/me', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 

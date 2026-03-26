@@ -1286,7 +1286,7 @@
             if (!token) return;
 
             try {
-                const res = await fetch('/api/auth/me', {
+                const res = await fetch('/me', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await res.json();
