@@ -479,59 +479,46 @@
         let lastBar = null;
 
 
-        // Socket.IO 연결 (현재 호스트와 포트 자동 감지)
-        const socketUrl = window.location.protocol + "//" + window.location.hostname + (window.location.port ? ":" + window.location.port : "");
-        console.log('🔌 [Socket.IO] Attempting connection to:', socketUrl);
+        // Socket.IO 연결 (base.html의 globalSocket 사용)
+        const socket = globalSocket;
 
-        const socket = io(socketUrl, {
-            path: '/socket.io',
-            transports: ['websocket', 'polling'],
-            reconnectionAttempts: 10
-        });
+        // 기존 개별 소켓 초기화 로직 제거 (globalSocket이 이미 연결 관리함)
+        /*
+        const socketUrl = ...
+        const socket = io(socketUrl, { ... });
+        */
 
-        socket.on('connect', () => {
-            console.log('✅ [Socket.IO] Connected! ID:', socket.id);
+        // 연결 상태 표시 로직 유지 (globalSocket의 상태 반영)
+        const updateSocketStatus = () => {
             const indicator = document.getElementById('live-indicator');
-            if (indicator) {
-                indicator.className = 'flex h-2 w-2 rounded-full bg-green-500 animate-pulse';
-            }
             const statusTxt = document.getElementById('socket-status-text');
             const statusDot = document.getElementById('socket-status-dot');
-            if (statusTxt) {
-                statusTxt.textContent = '실시간 연결됨';
-                statusTxt.className = 'text-[10px] text-green-500 font-medium';
+            
+            if (socket.connected) {
+                if (indicator) indicator.className = 'flex h-2 w-2 rounded-full bg-green-500 animate-pulse';
+                if (statusTxt) {
+                    statusTxt.textContent = '실시간 연결됨';
+                    statusTxt.className = 'text-[10px] text-green-500 font-medium';
+                }
+                if (statusDot) statusDot.className = 'h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#10b981] animate-pulse';
+            } else {
+                if (indicator) indicator.className = 'flex h-2 w-2 rounded-full bg-red-500';
+                if (statusTxt) {
+                    statusTxt.textContent = '연결 끊김 (재시도 중)';
+                    statusTxt.className = 'text-[10px] text-red-500 font-medium';
+                }
+                if (statusDot) statusDot.className = 'h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]';
             }
-            if (statusDot) {
-                statusDot.className = 'h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#10b981] animate-pulse';
-            }
-        });
+        };
 
-        socket.on('heartbeat', (data) => {
-            console.warn('💓 [Socket.IO] Heartbeat received:', data.time);
-        });
-
-        socket.on('disconnect', () => {
-            console.error('❌ [Socket.IO] Disconnected!');
-            const indicator = document.getElementById('live-indicator');
-            if (indicator) indicator.className = 'flex h-2 w-2 rounded-full bg-red-500';
-
-            const statusTxt = document.getElementById('socket-status-text');
-            const statusDot = document.getElementById('socket-status-dot');
-            if (statusTxt) {
-                statusTxt.textContent = '연결 끊김 (재시도 중)';
-                statusTxt.className = 'text-[10px] text-red-500 font-medium';
-            }
-            if (statusDot) {
-                statusDot.className = 'h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]';
-            }
-        });
-
-        socket.on('connect_error', (error) => {
-            console.error('💥 [Socket.IO] Connection Error:', error);
-        });
+        socket.on('connect', updateSocketStatus);
+        socket.on('disconnect', updateSocketStatus);
+        
+        // 초기 로드 시 상태 확인
+        if (socket.connected) updateSocketStatus();
 
         socket.on('price_update', (data) => {
-            console.log(`📡 [Socket.IO] Price Update Received:`, data);
+            // console.log(`📡 [Socket.IO] Price Update Received:`, data);
             try {
                 if (data.ticker_code && data.ticker_code.trim() === currentTicker.trim()) {
                     // 실시간 데이터로 고가/저가 갱신
@@ -547,15 +534,13 @@
                             time: now,
                             value: data.price
                         });
-
-                        // 거래량 히스토그램 업데이트 삭제됨
                         chart.timeScale().scrollToRealTime();
                     }
                 }
 
-                // 보유 주식 중 해당 종목이 있으면 목록 갱신
+                // 보유 주식 중 해당 종목이 있으면 목록 갱신 (지연 방지)
                 if (myHoldings && myHoldings.some(h => h.ticker_code === data.ticker_code)) {
-                    renderHoldings();
+                    // renderHoldings(); // 부하 방지를 위해 주석 처리하거나 필요 시 호출
                 }
             } catch (e) {
                 console.error('❌ UI Update Error:', e);
@@ -1256,7 +1241,7 @@
 
         socket.on('order_executed', (data) => {
             console.log('🎉 [SocketIO] Order Executed:', data);
-            showAlert(`✅ ${data.message}!`, 'green');
+            // 글로벌 토스트 알림이 base.html에서 이미 처리됨
             fetchHoldings();
             fetchPendingOrders();
             loadUserInfo();

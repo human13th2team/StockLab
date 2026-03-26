@@ -17,6 +17,9 @@ def create_app(config_name='dev'):
     from app.extensions import socketio
     socketio.init_app(app)
     
+    # [NEW] SocketIO 이벤트 핸들러 등록
+    from . import socket_events
+    
     # Redis 초기화
     from app.extensions import redis_client
     redis_client.connection_pool.connection_kwargs.update({
