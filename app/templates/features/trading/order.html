@@ -461,27 +461,33 @@
 
     <script>
         // ─── 전역 상태 ────────────────────────────────────────────────
-        let currentTicker = '{{ ticker }}';
-        let currentStockName = '{{ stock_name }}';
-        let currentPrice = {{ price_data.current if price_data else 0 }};
-        let openingPrice = {{ price_data.open if price_data else 0 }};
-        let highPrice = {{ price_data.high if price_data else 0 }};
-        let lowPrice = {{ price_data.low if price_data else 0 }};
-        let currentTab = 'buy';
-        let currentInterval = '1m';
-        let chart, baselineSeries, volumeSeries;
-        let chartUpdateTimer = null;
-        let lastBar = null;
+        var currentTicker = '{{ ticker }}';
+        var currentStockName = '{{ stock_name }}';
+        var currentPrice = {{ price_data.current if price_data else 0 }};
+        var openingPrice = {{ price_data.open if price_data else 0 }};
+        var highPrice = {{ price_data.high if price_data else 0 }};
+        var lowPrice = {{ price_data.low if price_data else 0 }};
+        var currentTab = 'buy';
+        var currentInterval = '1m';
+        var chart, baselineSeries, volumeSeries;
+        var chartUpdateTimer = null;
+        var lastBar = null;
 
 
-        // Socket.IO 연결 (base.html의 globalSocket 사용)
-        const socket = globalSocket;
+        // 개별 소켓 초기화 (order.html은 base.html을 상속받지 않으므로 독자적 연결 필요)
+        const socketUrl = window.location.protocol + '//' + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
+        const socket = io(socketUrl, {
+            path: '/socket.io',
+            transports: ['websocket', 'polling']
+        });
 
-        // 기존 개별 소켓 초기화 로직 제거 (globalSocket이 이미 연결 관리함)
-        /*
-        const socketUrl = ...
-        const socket = io(socketUrl, { ... });
-        */
+        socket.on('connect', () => {
+            console.log('✅ [Trading Socket] Connected:', socket.id);
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                socket.emit('join', { token: token });
+            }
+        });
 
         // 연결 상태 표시 로직 유지 (globalSocket의 상태 반영)
         const updateSocketStatus = () => {
@@ -551,14 +557,14 @@
                 if (!res.ok) throw new Error('데이터를 불러올 수 없습니다.');
                 const data = await res.json();
 
-                // KIS API 필드 -> 전역 상태 업데이트 (안전한 파싱)
-                currentPrice = parseInt(data.stck_prpr) || 0;
-                const openPri = parseInt(data.stck_oprc) || 0;
-                const highPri = parseInt(data.stck_hgpr) || 0;
-                const lowPri = parseInt(data.stck_lwpr) || 0;
-                const vol = parseInt(data.acml_vol) || 0;
-                const change = parseInt(data.prdy_vrss) || 0;
-                const rate = parseFloat(data.prdy_ctrt) || 0.0;
+                // KIS API 필드 및 Redis 혼용을 고려한 상태 업데이트 (안전한 파싱)
+                currentPrice = parseInt(data.stck_prpr || data.current) || 0;
+                const openPri = parseInt(data.stck_oprc || data.open) || 0;
+                const highPri = parseInt(data.stck_hgpr || data.high) || 0;
+                const lowPri = parseInt(data.stck_lwpr || data.low) || 0;
+                const vol = parseInt(data.acml_vol || data.volume) || 0;
+                const change = parseInt(data.prdy_vrss || data.change) || 0;
+                const rate = parseFloat(data.prdy_ctrt || data.rate) || 0.0;
 
                 // UI 업데이트
                 if (document.getElementById('open-price')) document.getElementById('open-price').textContent = openPri.toLocaleString();
@@ -872,8 +878,8 @@
 
         // ─── 미체결 주문 상태 (클라이언트 캐시) ─────────────────────────
         // { orderId, ticker, type, price, qty, expiresAt(ms) }
-        let pendingOrders = [];
-        let timerInterval = null;
+        var pendingOrders = [];
+        var timerInterval = null;
 
         // ─── 주문 실행 ────────────────────────────────────────────────
         async function placeOrder() {
@@ -1193,6 +1199,13 @@
 
         async function fetchHoldings() {
             const token = localStorage.getItem('access_token');
+            if (!token) {
+                const listEl = document.getElementById('holdings-list');
+                if (listEl) {
+                    listEl.innerHTML = '<tr><td colspan="6" class="py-12 text-center text-gray-600 bg-gray-900/10 rounded-lg"><div class="flex flex-col items-center gap-2"><span class="text-2xl text-gray-800">🔒</span>로그인이 필요합니다.</div></td></tr>';
+                }
+                return;
+            }
             try {
                 const res = await fetch('/api/orders/holdings', {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1213,10 +1226,10 @@
             }
 
             listEl.innerHTML = myHoldings.map(h => {
-                // 현재가를 전역 변수나 캐시에서 가져옴 (우선 현재 보고있는 종목이면 실시간 반영)
-                const livePrice = (h.ticker_code === currentTicker) ? currentPrice : h.avg_price; // 임시: 다른 종목은 평단가와 동일하게 표시 (추후 보완)
+                // 현재가를 전역 변수나 캐시에서 가져옴 (우선 현재 보고있는 종목이면 실시간 반영, 단 0이 아닐 때만)
+                const livePrice = (h.ticker_code === currentTicker && currentPrice > 0) ? currentPrice : h.avg_price;
                 const profit = (livePrice - h.avg_price) * h.total_qty;
-                const profitRate = ((livePrice - h.avg_price) / h.avg_price * 100).toFixed(2);
+                const profitRate = h.avg_price > 0 ? ((livePrice - h.avg_price) / h.avg_price * 100).toFixed(2) : "0.00";
                 const cls = profit >= 0 ? 'text-red-400' : 'text-blue-400';
 
                 return `
@@ -1236,7 +1249,12 @@
 
         socket.on('order_executed', (data) => {
             console.log('🎉 [SocketIO] Order Executed:', data);
-            // 글로벌 토스트 알림이 base.html에서 이미 처리됨
+            
+            // base.html의 글로벌 토스트가 없으므로 자체 인터페이스 알림창 사용
+            // 매수/매도 여부에 따른 안내 (오류처럼 보이지 않도록 함)
+            var toastMsg = `[체결] ${data.message}`;
+            showAlert(toastMsg, data.order_type === 'BUY' ? 'green' : 'blue');
+            
             fetchHoldings();
             fetchPendingOrders();
             loadUserInfo();
@@ -1287,7 +1305,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     const cashEls = document.querySelectorAll('.user-cash-display');
-                    cashEls.forEach(el => el.textContent = data.cash.toLocaleString() + '원');
+                    cashEls.forEach(el => el.textContent = (data.cash || 0).toLocaleString() + '원');
 
                     const depositEls = document.querySelectorAll('.user-deposit-display');
                     depositEls.forEach(el => el.textContent = (data.deposit || 0).toLocaleString() + '원');

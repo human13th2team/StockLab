@@ -33,8 +33,8 @@ class ExecutionService:
                 
                 # [NEW] 알림용 데이터 수집 (사용자 ID, 종목명, 체결가, 수량 등)
                 from app.models.stock import Stock
-                stock = Stock.query.filter_by(stock_code=ticker_code).first()
-                stock_name = stock.stock_name if stock else ticker_code
+                stock = Stock.query.filter_by(ticker_code=ticker_code).first()
+                stock_name = stock.name if stock else ticker_code
                 
                 executions_info.append({
                     "user_id": order.user_id,
