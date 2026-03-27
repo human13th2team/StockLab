@@ -48,3 +48,46 @@ def trading():
 def control():
     """투자 제어 (주문/체결 내역) 화면"""
     return render_template('features/execution/history.html', active_menu='control')
+
+from flask import jsonify
+
+@main_bp.route('/api/stocks/quote/<ticker>')
+def get_stock_quote(ticker):
+    from app.extensions import redis_client
+    raw_info = redis_client.hgetall(f"stock_info:{ticker}")
+    if not raw_info:
+        return jsonify({"error": "데이터를 불러올 수 없습니다."}), 404
+        
+    stock_info = {k.decode('utf-8'): v.decode('utf-8') for k, v in raw_info.items()}
+    return jsonify(stock_info), 200
+
+@main_bp.route('/api/stocks/history/<ticker>')
+def get_stock_history(ticker):
+    interval = request.args.get('interval', '1')
+    from app.models.stock_daily_data import StockDailyData
+    
+    # 1일간격(1440분)이 아닐 경우 빈 리스트 반환 (프론트에서 더미 데이터 생성하도록 유도)
+    if interval != '1440':
+        return jsonify([])
+
+    # 일봉 데이터 조회 (최근 90영업일)
+    history = StockDailyData.query.filter_by(ticker_code=ticker)\
+                                  .order_by(StockDailyData.stk_date.desc())\
+                                  .limit(90).all()
+    
+    if not history:
+        return jsonify([])
+        
+    # 날짜 오름차순 정렬 (차트 렌더링용)
+    history.reverse()
+    
+    result = []
+    for h in history:
+        result.append({
+            "time": h.stk_date.strftime("%Y-%m-%d"),
+            "open": h.open_price,
+            "high": h.high_price,
+            "low": h.low_price,
+            "close": h.close_price
+        })
+    return jsonify(result), 200
