@@ -10,7 +10,7 @@ class User(db.Model):
     nickname = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     roles = db.Column(db.Boolean, default=False)  # True: Admin, False: User
-    cash = db.Column(db.BigInteger, default=1000000)  # 초기 자금 100만원
+    cash = db.Column(db.BigInteger, default=10000000)  # 초기 자금 100만원
     deposit = db.Column(db.BigInteger, default=0)       # 예수금
 
     # 관계 설정 (회원 탈퇴 시 연관 데이터 자동 삭제)
