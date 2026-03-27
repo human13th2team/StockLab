@@ -99,7 +99,7 @@
             aside {
                 display: none;
             }
-            
+
             header {
                 padding: 0 20px;
             }
@@ -212,12 +212,30 @@
             font-weight: 700;
         }
 
-        .status-completed { background-color: #e6fffa; color: #319795; }
-        .status-pending { background-color: #fffaf0; color: #dd6b20; }
-        .status-cancelled { background-color: #fff5f5; color: #e53e3e; }
+        .status-completed {
+            background-color: #e6fffa;
+            color: #319795;
+        }
 
-        .type-buy { color: #f56565; font-weight: 700; }
-        .type-sell { color: #4299e1; font-weight: 700; }
+        .status-pending {
+            background-color: #fffaf0;
+            color: #dd6b20;
+        }
+
+        .status-cancelled {
+            background-color: #fff5f5;
+            color: #e53e3e;
+        }
+
+        .type-buy {
+            color: #f56565;
+            font-weight: 700;
+        }
+
+        .type-sell {
+            color: #4299e1;
+            font-weight: 700;
+        }
 
         /* User Profile in Header */
         .user-profile {
@@ -264,10 +282,12 @@
         <div class="logo-title">StockLab</div>
         <div class="logo-subtitle">PROFESSIONAL SIMULATION</div>
 
-        <a href="/" class="menu-item">📊 실시간 대시보드</a>
-        <a href="/analysis" class="menu-item">👤 마이페이지</a>
-        <a href="/control" class="menu-item active">📈 투자 제어</a>
-        <a href="/api/admin" class="menu-item">⚙️ 관리자 콘솔</a>
+        <a href="/" class="menu-item {{ 'active' if active_menu == 'dashboard' else '' }}">📊 실시간 대시보드</a>
+        <a href="{{ url_for('analysis.report') }}"
+            class="menu-item {{ 'active' if active_menu == 'report' else '' }}">👤 마이페이지</a>
+        <a href="/control" class="menu-item {{ 'active' if active_menu == 'control' else '' }}">📈 투자 제어</a>
+        <a href="{{ url_for('admin.get_dashboard') }}" class="menu-item">⚙️ 관리자 콘솔</a>
+
 
         <div style="margin-top: auto;" id="auth-menu-container">
             <a href="#" class="menu-item" id="auth-link" onclick="handleLogout()">
@@ -295,7 +315,9 @@
             <div class="card">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold">주문 및 체결 내역</h2>
-                    <button onclick="loadHistory()" class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">새로고침 ↻</button>
+                    <button onclick="loadHistory()"
+                        class="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">새로고침
+                        ↻</button>
                 </div>
 
                 <div class="tab-container">
@@ -348,7 +370,7 @@
                 });
                 if (!response.ok) throw new Error('Auth failed');
                 const user = await response.json();
-                
+
                 document.getElementById('header-nickname').textContent = user.nickname;
                 document.getElementById('header-cash').textContent = `₩ ${user.cash.toLocaleString()}`;
                 document.getElementById('header-avatar').textContent = user.nickname.substring(0, 1).toUpperCase();
@@ -362,7 +384,7 @@
         async function loadHistory() {
             const token = localStorage.getItem('access_token');
             const tbody = document.getElementById('history-list');
-            
+
             try {
                 const response = await fetch('/api/executions/history', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -378,8 +400,8 @@
 
         function renderHistory() {
             const tbody = document.getElementById('history-list');
-            const filtered = currentFilter === 'ALL' 
-                ? allHistory 
+            const filtered = currentFilter === 'ALL'
+                ? allHistory
                 : allHistory.filter(h => h.status === currentFilter);
 
             if (filtered.length === 0) {
@@ -415,7 +437,7 @@
         }
 
         function getStatusClass(status) {
-            switch(status) {
+            switch (status) {
                 case 'COMPLETED': return 'status-completed';
                 case 'PENDING': return 'status-pending';
                 case 'CANCELLED': return 'status-cancelled';
@@ -424,7 +446,7 @@
         }
 
         function getStatusText(status) {
-            switch(status) {
+            switch (status) {
                 case 'COMPLETED': return '체결완료';
                 case 'PENDING': return '미체결';
                 case 'CANCELLED': return '취소됨';
@@ -454,4 +476,5 @@
         });
     </script>
 </body>
+
 </html>
